@@ -52,6 +52,7 @@ Built as a native app that talks to YouTube Music straight from the phone. No se
 | **Home** | Mood chips (Relax, Sleep, Energize, Sad…), Listen again, Picked for you from your artists and languages, Because you played…, Quick picks, Trending. |
 | **Mix** | Add any genre, mood or style (*Lo-fi*, *Tamil hip-hop*, *90s Bollywood*…). Each one is searched for songs and playlists the moment you add it, and **Play mix** blends them all into one queue. |
 | **Explore** | New releases, charts (global or your country), top artists, and bold gradient **Moods &amp; genres** tiles. |
+| **Song versions** | Quick picks, Trending and radios show YouTube Music's *song* versions (album art, clean titles) instead of music-video thumbnails. Playing a video switches to its song version. |
 | **Global by default** | Quick picks, New releases, Trending and Charts show worldwide music. One switch makes them follow your country instead. |
 
 ### Yours
@@ -60,6 +61,7 @@ Built as a native app that talks to YouTube Music straight from the phone. No se
 |---|---|
 | **Analytics** | A Wrapped-style summary, listening time, top artists and songs, a streak, listening by day and by hour. Worked out on the device from your own play log. Nothing is uploaded. |
 | **Library** | Likes, your own playlists, saved albums and artists, history, and downloads. |
+| **Account (optional)** | Sign in with Google's TV device-code flow (you approve a short code at google.com/device; the app never sees your password) to show your YouTube Music home and liked songs. Experimental. |
 | **Import** | Build a playlist from a pasted list (`Song - Artist`) or a CSV exported from another app; each line is matched on YouTube Music. |
 | **Backup and restore** | One file with your likes, playlists, genres, analytics and settings. Restore it after reinstalling or on a new phone. |
 
@@ -81,7 +83,7 @@ flowchart LR
 ```
 
 - **The app** is a [Capacitor](https://capacitorjs.com) wrapper around a plain web UI (`frontend/`, no build step). It plays audio from a direct, device-bound stream address.
-- **The engine** (`frontend/js/engine`) answers the same endpoints as the optional server (search, home, charts, moods, albums, artists, playlists, radio, lyrics, streams), using the [`youtubei.js`](https://github.com/LuanRT/YouTube.js) client. Inside the app it uses Capacitor's native HTTP with a fresh connection per request.
+- **The engine** (`frontend/js/engine`) answers the same endpoints as the optional server (search, home, charts, moods, albums, artists, playlists, radio, lyrics, streams), using the [`youtubei.js`](https://github.com/LuanRT/YouTube.js) client. Inside the app it uses its own native **IPv4-only HTTPS client** (a new connection per request, no cookies, no cache), with Capacitor's HTTP as a fallback.
 - **Everything personal stays on the phone**: likes, playlists, history, analytics and settings live in local storage and IndexedDB.
 - **The optional server** (`backend/`, FastAPI with `ytmusicapi` and `yt-dlp`) powers the website version and ringtone cutting. The app works without it.
 

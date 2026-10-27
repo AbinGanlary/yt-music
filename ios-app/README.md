@@ -53,8 +53,10 @@ bundle ID, the build uses it; if it is a wildcard, the build uses the "Bundle ID
 - **Audio:** the phone asks YouTube for a stream address with the visionOS client, which serves full-length audio with any
   range request, so the player streams it directly. Each address is checked with a tiny range request before it is used. The
   iOS and Android-VR clients only serve the first minute, so they are a last resort.
-- **Network:** inside the app the engine uses Capacitor's native HTTP with a **fresh connection per request**, wipes saved
-  cookies before each call, and follows redirects by hand.
+- **Network:** inside the app the engine uses its own native HTTPS client (`ios-app/native/Ipv4Http.swift`, added to the
+  project by `scripts/patch_ios.py`). It always uses **IPv4**, opens a fresh connection per request and keeps no cookies or
+  cache, because iOS otherwise picks IPv4 or IPv6 per connection and YouTube treats them differently. If it is unavailable the
+  engine falls back to Capacitor's HTTP (fresh session per request, cookies wiped).
 - **Playback modes:** Settings → Playback offers Auto, Stream, or Download first (with next-song prefetch).
 - **When YouTube changes something:** if you also run the optional server and set its address, the app loads the engine
   from the server (falling back to its bundled copy), so a fix is a file update there. Otherwise rebuild the app.
@@ -80,6 +82,7 @@ installing from a link.
 
 - `capacitor.config.json`: app name, bundle ID placeholder, status bar
 - `scripts/copy-web.mjs`: copies `../frontend` into `www/` for bundling
-- `scripts/patch_ios.py`: Info.plist (background audio, portrait), audio session, icon, dark launch screen
+- `scripts/patch_ios.py`: Info.plist (background audio, portrait), audio session, the IPv4 client, icon, dark launch screen
+- `native/Ipv4Http.swift`: the IPv4-only HTTPS client plugin
 - `scripts/make_ota.py`: writes an install page for a signed IPA into `backend/ota/`
 - `../.github/workflows/ios.yml`: the cloud build (and optional signing)
