@@ -1,0 +1,21 @@
+# secrets and local-only files
+backend/token.txt
+backend/.venv/
+backend/*.log
+backend/*.err
+backend/__pycache__/
+backend/ota/*.ipa
+backend/ota/manifest.plist
+backend/ota/index.html
+*.p12
+*.pem
+*.cer
+*.mobileprovision
+ios-app/signing/
+# generated
+ios-app/node_modules/
+ios-app/www/
+ios-app/ios/
+.claude/
+__pycache__/
+ios-app/out/

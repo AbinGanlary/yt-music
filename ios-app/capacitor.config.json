@@ -1,0 +1,14 @@
+{
+  "appId": "com.ytmusic.app",
+  "appName": "YT Music",
+  "webDir": "www",
+  "backgroundColor": "#0c0c0f",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0c0c0f",
+    "scrollEnabled": false
+  },
+  "plugins": {
+    "StatusBar": { "style": "DARK", "overlaysWebView": true }
+  }
+}

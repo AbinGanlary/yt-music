@@ -1,0 +1,136 @@
+name: Build iOS app
+
+# Builds the native iOS wrapper on a cloud Mac and (if the signing secrets are set) signs it with your certificate.
+# Run it from the Actions tab: "Build iOS app" → "Run workflow".
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: "Bundle ID (only used if your provisioning profile is a wildcard)"
+        required: false
+        default: "com.ytmusic.app"
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      IOS_CERT_P12_BASE64: ${{ secrets.IOS_CERT_P12_BASE64 }}
+      IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+      IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          node --version
+
+      - name: Decide the bundle ID
+        id: ids
+        run: |
+          set -euo pipefail
+          BUNDLE_ID="${{ inputs.bundle_id }}"
+          if [ -n "${IOS_PROFILE_BASE64:-}" ]; then
+            echo "$IOS_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/app.mobileprovision"
+            security cms -D -i "$RUNNER_TEMP/app.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+            APPID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/profile.plist")
+            TEAM=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$RUNNER_TEMP/profile.plist")
+            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")
+            EXPIRES=$(/usr/libexec/PlistBuddy -c 'Print :ExpirationDate' "$RUNNER_TEMP/profile.plist")
+            SUFFIX="${APPID#${TEAM}.}"
+            echo "Provisioning profile: $PROFILE_NAME (team $TEAM), expires $EXPIRES"
+            echo "Profile app id: $APPID"
+            if [ "$SUFFIX" != "*" ] && [[ "$SUFFIX" != *"*" ]]; then
+              BUNDLE_ID="$SUFFIX"                      # the profile names one exact bundle ID: use it
+            fi
+            echo "signing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No signing secrets found: building an UNSIGNED ipa."
+            echo "signing=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Bundle ID: $BUNDLE_ID"
+          echo "bundle_id=$BUNDLE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Install and generate the iOS project
+        working-directory: ios-app
+        run: |
+          set -euo pipefail
+          jq --arg id "${{ steps.ids.outputs.bundle_id }}" '.appId=$id' capacitor.config.json > cap.tmp && mv cap.tmp capacitor.config.json
+          npm install --no-audit --no-fund
+          node scripts/copy-web.mjs
+          npx cap add ios
+          npx cap sync ios
+          python3 scripts/patch_ios.py
+          echo "---- AppDelegate.swift ----"; cat ios/App/App/AppDelegate.swift
+
+      - name: Build (unsigned archive)
+        working-directory: ios-app/ios/App
+        run: |
+          set -euo pipefail
+          if [ -d App.xcworkspace ]; then TARGET=(-workspace App.xcworkspace); else TARGET=(-project App.xcodeproj); fi
+          xcodebuild "${TARGET[@]}" -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            MARKETING_VERSION=1.0.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            archive
+          test -d "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+          cp -R "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/App.app"
+
+      - name: Sign with your certificate
+        if: steps.ids.outputs.signing == 'true'
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/App.app"
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"; KC_PASS="$(uuidgen)"
+          security create-keychain -p "$KC_PASS" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KC_PASS" "$KEYCHAIN"
+          echo "$IOS_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$IOS_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KC_PASS" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          # Apple's intermediate certificate lets macOS trust the chain of enterprise / developer certificates
+          for CER in AppleWWDRCAG3 AppleWWDRCAG6 AppleWWDRCAG4; do
+            curl -fsSL "https://www.apple.com/certificateauthority/$CER.cer" -o "$RUNNER_TEMP/$CER.cer"               && security import "$RUNNER_TEMP/$CER.cer" -k "$KEYCHAIN" -T /usr/bin/codesign > /dev/null 2>&1 || true
+          done
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | awk 'NR==1{print $2}')
+          if [ -z "$IDENTITY" ]; then   # not "valid" per macOS (revoked, or chain not trusted): try anyway and report why
+            echo "::warning::macOS lists no VALID signing identity in the .p12 (it may be revoked or expired). Trying anyway."
+            IDENTITY=$(security find-identity -p codesigning "$KEYCHAIN" | awk '/^ *[0-9]+\)/{print $2; exit}')
+          fi
+          test -n "$IDENTITY" || { echo "No signing identity found in the .p12"; exit 1; }
+          security find-identity -p codesigning "$KEYCHAIN" | sed 's/[0-9A-F]\{40\}/<hash>/'
+
+          # entitlements come from the provisioning profile, and the profile is embedded in the app
+          /usr/libexec/PlistBuddy -x -c 'Print :Entitlements' "$RUNNER_TEMP/profile.plist" > "$RUNNER_TEMP/entitlements.plist"
+          cp "$RUNNER_TEMP/app.mobileprovision" "$APP/embedded.mobileprovision"
+
+          # sign nested code first, then the app itself
+          find "$APP" \( -name "*.framework" -o -name "*.dylib" -o -name "*.appex" \) -print0 | while IFS= read -r -d '' f; do
+            codesign --force --sign "$IDENTITY" --timestamp=none "$f"
+          done
+          codesign --force --sign "$IDENTITY" --entitlements "$RUNNER_TEMP/entitlements.plist" --timestamp=none "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dvv "$APP" 2>&1 | grep -E "Identifier|Authority|TeamIdentifier" || true
+
+      - name: Package the IPA
+        run: |
+          set -euo pipefail
+          NAME="YTMusic-signed.ipa"; [ "${{ steps.ids.outputs.signing }}" = "true" ] || NAME="YTMusic-unsigned.ipa"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$RUNNER_TEMP/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/$NAME" Payload)
+          ls -lh "$GITHUB_WORKSPACE/$NAME"
+          echo "IPA_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_NAME }}
+          path: ${{ env.IPA_NAME }}
+          retention-days: 14

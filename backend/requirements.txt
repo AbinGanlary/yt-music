@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+ytmusicapi
+yt-dlp[default]
+httpx
+imageio-ffmpeg

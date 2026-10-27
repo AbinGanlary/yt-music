@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YT Music</title>
+<meta name="theme-color" content="#0c0c0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="YT Music">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="preload" href="/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/dmsans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- desktop chrome (hidden on phones) -->
+  <header id="dtop" class="dtop">
+    <div class="brand"><span id="brand-logo"></span><span class="brand-name">YT Music</span></div>
+    <form class="dsearch" id="dsearch" role="search">
+      <span id="dsearch-ic"></span>
+      <input id="dq" type="search" aria-label="Search songs, albums and artists" placeholder="Search songs, albums, artists" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </form>
+    <span class="grow"></span>
+    <button class="ib" data-act="open-settings" aria-label="Settings" id="dtop-gear"></button>
+  </header>
+  <nav id="side" class="side" aria-label="Main"></nav>
+
+  <div id="view"></div>
+
+  <aside id="panel" class="panel" aria-label="Now playing panel" hidden>
+    <div class="panel-art" id="panel-art"><img id="panel-img" alt=""></div>
+    <div class="ptabs" role="tablist" aria-label="Panel sections">
+      <button role="tab" data-act="tab-queue" data-tab-name="queue">UP NEXT</button>
+      <button role="tab" data-act="tab-lyrics" data-tab-name="lyrics">LYRICS</button>
+      <button role="tab" data-act="tab-related" data-tab-name="related">RELATED</button>
+    </div>
+    <div class="pbody" id="panel-body"></div>
+  </aside>
+
+  <!-- phone chrome -->
+  <div id="mini" class="mini" hidden>
+    <div class="mini-row">
+      <button class="mini-hit" data-act="np-open" aria-label="Open player">
+        <img id="mini-art" class="cv" alt="">
+        <span class="qmeta"><b id="mini-title"></b><span id="mini-artist"></span></span>
+      </button>
+      <button class="ib" data-act="like-now" id="mini-like" aria-label="Like"></button>
+      <button class="ib" data-act="toggle" id="mini-play" aria-label="Play"></button>
+    </div>
+    <div class="mini-prog"><i id="mini-prog"></i></div>
+  </div>
+  <nav id="tabs" class="tabs" aria-label="Main"></nav>
+  <button id="gsearch" class="gsearch" data-act="go-search" aria-label="Search"></button>
+
+  <!-- desktop player bar -->
+  <footer id="bar" class="bar" hidden>
+    <div class="bar-seek"><input type="range" class="rg" id="bar-seek" min="0" max="1000" value="0" aria-label="Seek"></div>
+    <div class="bar-grid">
+      <div class="bar-l">
+        <button class="ib" data-act="prev" id="bar-prev" aria-label="Previous"></button>
+        <button class="playbtn sm" data-act="toggle" id="bar-play" aria-label="Play"></button>
+        <button class="ib" data-act="next" id="bar-next" aria-label="Next"></button>
+        <span class="bar-time"><span id="bar-cur">0:00</span> / <span id="bar-dur">0:00</span></span>
+      </div>
+      <div class="bar-c">
+        <img id="bar-art" class="cv lg" alt="">
+        <div class="qmeta grow"><b id="bar-title"></b><span id="bar-sub"></span></div>
+        <button class="ib" data-act="dislike-now" id="bar-dislike" aria-label="Dislike"></button>
+        <button class="ib" data-act="like-now" id="bar-like" aria-label="Like"></button>
+        <button class="ib" data-act="menu-now" id="bar-menu" aria-label="More actions"></button>
+      </div>
+      <div class="bar-r">
+        <button class="ib" data-act="mute" id="bar-mute" aria-label="Mute"></button>
+        <input type="range" class="rg vol" id="bar-vol" min="0" max="100" value="100" aria-label="Volume">
+        <button class="ib" data-act="repeat" id="bar-repeat" aria-label="Repeat"></button>
+        <button class="ib" data-act="shuffle" id="bar-shuffle" aria-label="Shuffle"></button>
+        <button class="ib" data-act="toggle-panel" id="bar-panel" aria-label="Toggle queue panel"></button>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- phone: full-screen player -->
+<section id="np" class="np" aria-hidden="true" aria-label="Now playing">
+  <div class="np-bg" id="np-bg" aria-hidden="true"></div>
+  <div class="np-shade" aria-hidden="true"></div>
+  <header class="np-top">
+    <button class="ib" data-act="np-close" aria-label="Collapse player" id="np-close"></button>
+    <button class="ib" data-act="menu-now" aria-label="More actions" id="np-menu"></button>
+  </header>
+  <div class="np-body">
+    <div class="np-stage"><img id="np-art" class="np-art" alt=""></div>
+    <div class="np-meta">
+      <div class="np-text"><div id="np-title" class="np-title"></div><div id="np-sub" class="np-sub"></div></div>
+      <button class="ib" data-act="dislike-now" id="np-dislike" aria-label="Dislike"></button>
+      <button class="ib" data-act="like-now" id="np-like" aria-label="Like"></button>
+    </div>
+    <div class="np-seek">
+      <input type="range" class="rg" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+      <div class="times"><span id="t-cur">0:00</span><span class="qbadge" aria-label="AAC audio">AAC</span><span id="t-dur">0:00</span></div>
+    </div>
+    <div class="np-ctrls">
+      <button class="ib" data-act="shuffle" id="b-shuffle" aria-label="Shuffle"></button>
+      <button class="ib lg" data-act="prev" id="b-prev" aria-label="Previous"></button>
+      <button class="playbtn" data-act="toggle" id="b-play" aria-label="Play"></button>
+      <button class="ib lg" data-act="next" id="b-next" aria-label="Next"></button>
+      <button class="ib" data-act="repeat" id="b-repeat" aria-label="Repeat"></button>
+    </div>
+    <div class="np-pills">
+      <button class="pill" data-act="airplay" id="p-air" aria-label="AirPlay" hidden></button>
+      <button class="pill" data-act="sleep" id="p-sleep"></button>
+      <button class="pill" data-act="speed" id="p-speed"></button>
+      <button class="pill" data-act="dl-now" id="p-dl" aria-label="Save offline"></button>
+      <button class="pill" data-act="export-now" id="p-files" aria-label="Save to Files"></button>
+    </div>
+  </div>
+  <nav class="np-nav" aria-label="Up next, lyrics and related">
+    <button data-act="tab-queue">UP NEXT</button>
+    <button data-act="tab-lyrics">LYRICS</button>
+    <button data-act="tab-related">RELATED</button>
+  </nav>
+  <div class="np-sheet" id="np-sheet" role="dialog" aria-label="Queue, lyrics and related" hidden>
+    <div class="np-sheet-top">
+      <div class="stabs" role="tablist" aria-label="Sections">
+        <button role="tab" data-act="tab-queue" data-tab-name="queue">UP NEXT</button>
+        <button role="tab" data-act="tab-lyrics" data-tab-name="lyrics">LYRICS</button>
+        <button role="tab" data-act="tab-related" data-tab-name="related">RELATED</button>
+      </div>
+      <button class="ib" data-act="sheet-np-close" aria-label="Close" id="np-sheet-x"></button>
+    </div>
+    <div class="np-sheet-body" id="np-sheet-body"></div>
+  </div>
+</section>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-scrim" data-act="sheet-close"></div>
+  <div class="sheet-body" id="sheet-body" role="dialog" aria-modal="true"></div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<audio id="a" playsinline preload="auto"></audio>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
