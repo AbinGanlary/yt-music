@@ -450,7 +450,7 @@ function settingsDefs() {
       { id: "fit", k: "range", t: "Screen fit", d: "Drag to extend the app downward if there's an empty strip under the tab bar. If the tab bar disappears, drag back toward Auto.", v: S.get().bottomNudge || 0 },
     ],
     [ // About
-      { id: "ver", k: "val", t: "Version", d: isNative() ? "The app build you are using." : "The build you are using.", v: APP_VERSION + (isNative() ? " · app" : "") },
+      { id: "ver", k: "val", t: "Version", d: isNative() ? "The app build you are using." : "The build you are using.", v: "v" + APP_VERSION + (isNative() ? " (iPhone app)" : " (web)") },
       { id: "conn", k: "btn", t: isNative() ? "Music source" : "Access token", d: isNative() ? "Play straight from YouTube Music on this phone, or use your own PC server." : "The access token your backend asks for.", b: isNative() ? (getSource() === "device" ? "This phone" : getBase() ? new URL(getBase()).host : "Set up") : "Token", act: "open-connection" },
       ...(isNative() ? [] : [{ id: "upd", k: "btn", t: "Update app", d: "Fetch the latest version. Your saved songs, likes and settings are kept.", b: "Update", act: "app-update" }]),
       ...(isNative() ? [{ id: "netcheck", k: "btn", t: "Connection check", d: "Shows your phone's network addresses and whether YouTube accepts a test stream. Handy if songs don't start.", b: "Run", fn: async () => { toast("Checking…", 60000); toast(await checkConnection(), 40000); } }] : []),

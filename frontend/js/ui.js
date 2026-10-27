@@ -6,7 +6,7 @@ import * as S from "./settings.js";
 import { ic } from "./icons.js";
 
 export const APP_NAME = "YT Music";
-export const APP_VERSION = "31";
+export const APP_VERSION = "1.0.0";
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
