@@ -24,7 +24,7 @@ export const getBase = () => base;
 export const getToken = () => token;
 export function setSource(s) { source = s; try { localStorage.setItem("source", s); } catch {} configured = false; }
 export function setConnection({ server, token: t }) {
-  if (server !== undefined) { base = String(server).trim().replace(/\/+$/, ""); try { localStorage.setItem("apiBase", base); } catch {} }
+  if (server !== undefined) { base = String(server).trim().replace(/\/+$/, ""); if (!/^https:\/\//i.test(base) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(base)) base = ""; try { localStorage.setItem("apiBase", base); } catch {} }
   if (t !== undefined) { token = String(t).trim(); try { localStorage.setItem("token", token); } catch {} }
   configured = false;
 }
@@ -37,13 +37,8 @@ export const tk = (url) => {
 
 /* ---------- the on-device engine (loaded only when needed) ---------- */
 let eng = null, configured = false;
-const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 async function engine() {
-  if (!eng && isNative() && base) {
-    // If your PC server is reachable, use the engine it hosts: fixing a YouTube change then only needs a file update on the PC.
-    try { eng = await withTimeout(import(/* @vite-ignore */ `${base}/js/engine/index.js`), 4000); } catch { eng = null; }
-  }
-  eng ??= await import("./engine/index.js");
+  eng ??= await import("./engine/index.js");     // always the bundled engine: code is never loaded from a server
   if (!configured) {                                   // in a browser (development) the engine goes through the backend's /dev/fetch proxy
     if (!isNative()) eng.configure({ devBase: base || location.origin, devToken: token });
     configured = true;
@@ -232,7 +227,7 @@ function directArt(u, s) {
   try { if (/(googleusercontent|ggpht)\.com$/.test(new URL(u).hostname)) return u.replace(/=[ws]\d+(-h\d+)?.*$/, `=w${s}-h${s}-l90-rj`); } catch {}
   return u;
 }
-export const art = (u, s = 300) => (!u ? BLANK : isDevice() ? directArt(u, s) : abs(`/api/img?u=${encodeURIComponent(u)}&s=${s}`));
+export const art = (u, s = 300) => (!u ? BLANK : isDevice() ? directArt(u, s) : tk(`/api/img?u=${encodeURIComponent(u)}&s=${s}`));
 
 export const fmtTime = (s) => {
   if (!isFinite(s) || s < 0) s = 0;

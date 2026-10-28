@@ -52,7 +52,7 @@ async function loadGenre(g) {
   if (!d) { box.innerHTML = fail(esc(g.name), "reload-route"); return; }
   const songs = (d.songs || []).slice(0, 20), key = reg("g:" + g.id, songs);
   box.innerHTML = (songs.length
-    ? `<div class="actions" style="margin-bottom:10px"><button class="btn" data-act="play" data-key="${key}" data-i="0">${ic("play", 18)}Play</button><button class="btn ghost" data-act="shuffle-list" data-key="${key}">${ic("shuffle", 18)}Shuffle</button></div>${trackShelf(songs, key)}`
+    ? `<div class="actions" style="margin-bottom:10px"><button class="btn" data-act="play" data-key="${esc(key)}" data-i="0">${ic("play", 18)}Play</button><button class="btn ghost" data-act="shuffle-list" data-key="${esc(key)}">${ic("shuffle", 18)}Shuffle</button></div>${trackShelf(songs, key)}`
     : '<p class="note">No songs found for this one. Try a more common name.</p>')
     + (d.playlists?.length ? `<div class="cap" style="margin:16px var(--gx) 8px">Playlists</div>${collShelf(d.playlists)}` : "");
   paintBlend();
@@ -67,7 +67,7 @@ function paintBlend() {
   if (!out.length) { box.hidden = true; return; }
   const key = reg("mixall", out);
   box.hidden = false;
-  box.innerHTML = `<button class="btn" data-act="play" data-key="${key}" data-i="0">${ic("play", 18)}Play mix</button><button class="btn ghost" data-act="shuffle-list" data-key="${key}">${ic("shuffle", 18)}Shuffle</button><span class="cap" style="align-self:center;margin:0 0 0 4px">${out.length} songs from ${ids.length} genre${ids.length > 1 ? "s" : ""}</span>`;
+  box.innerHTML = `<button class="btn" data-act="play" data-key="${esc(key)}" data-i="0">${ic("play", 18)}Play mix</button><button class="btn ghost" data-act="shuffle-list" data-key="${esc(key)}">${ic("shuffle", 18)}Shuffle</button><span class="cap" style="align-self:center;margin:0 0 0 4px">${out.length} songs from ${ids.length} genre${ids.length > 1 ? "s" : ""}</span>`;
 }
 
 actions["mix-pick"] = (el) => {

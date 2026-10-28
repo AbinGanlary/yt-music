@@ -325,7 +325,7 @@ register("downloads", async () => {
   const key = reg("dls", tracks);
   page(hdrMain("Downloads", gearBtn), `
     <p class="note" style="padding-top:4px">${dls.length ? `${dls.length} song${dls.length === 1 ? "" : "s"} · ${(size / 1048576).toFixed(0)} MB on this device. They play without internet.` : ""}</p>
-    ${tracks.length ? `<div class="actions" style="padding-top:0"><button class="btn" data-act="play" data-key="${key}" data-i="0">${ic("play", 18)}Play all</button><button class="btn ghost" data-act="shuffle-list" data-key="${key}">${ic("shuffle", 18)}Shuffle</button></div><div class="qlist">${trackRows(tracks, key)}</div>`
+    ${tracks.length ? `<div class="actions" style="padding-top:0"><button class="btn" data-act="play" data-key="${esc(key)}" data-i="0">${ic("play", 18)}Play all</button><button class="btn ghost" data-act="shuffle-list" data-key="${esc(key)}">${ic("shuffle", 18)}Shuffle</button></div><div class="qlist">${trackRows(tracks, key)}</div>`
       : empty("Nothing downloaded yet", "Open a song's ⋯ menu and choose Download to listen without a connection.")}`);
 });
 
@@ -343,7 +343,7 @@ register("local", ({ id }) => {
   const key = reg("local", tracks);
   page(hdrBack(""), `
     <div class="hero">${cov}<div class="hero-t"><div class="cap">${kicker}</div><h1>${esc(title)}</h1><p>${tracks.length} song${tracks.length === 1 ? "" : "s"}</p></div></div>
-    ${tracks.length ? `<div class="actions"><button class="btn" data-act="play" data-key="${key}" data-i="0">${ic("play", 18)}Play</button><button class="btn ghost" data-act="shuffle-list" data-key="${key}">${ic("shuffle", 18)}Shuffle</button>${isPl ? `<button class="btn ghost" data-act="pl-rename" data-id="${esc(id)}">Rename</button><button class="btn ghost" data-act="pl-delete" data-id="${esc(id)}">Delete</button>` : ""}</div>`
+    ${tracks.length ? `<div class="actions"><button class="btn" data-act="play" data-key="${esc(key)}" data-i="0">${ic("play", 18)}Play</button><button class="btn ghost" data-act="shuffle-list" data-key="${esc(key)}">${ic("shuffle", 18)}Shuffle</button>${isPl ? `<button class="btn ghost" data-act="pl-rename" data-id="${esc(id)}">Rename</button><button class="btn ghost" data-act="pl-delete" data-id="${esc(id)}">Delete</button>` : ""}</div>`
       : isPl ? `<div class="actions"><button class="btn ghost" data-act="pl-rename" data-id="${esc(id)}">Rename</button><button class="btn ghost" data-act="pl-delete" data-id="${esc(id)}">Delete</button></div>` : ""}
     ${tracks.length ? `<div class="qlist">${trackRows(tracks, key, { ctx: isPl ? "pl:" + id : "" })}</div>` : empty("No songs yet", id === "liked" ? "Songs you like show up here." : id === "history" ? "Nothing played yet." : "Add songs from any song's ⋯ menu → Save to playlist.")}`);
 });
@@ -361,7 +361,7 @@ register("collection", ({ kind, id }) => {
     $("#c-body").innerHTML = `
       <div class="hero"><img class="cover${round ? " round" : ""}" src="${art(d.thumbnail, 600)}" alt=""><div class="hero-t"><div class="cap">${kind === "artist" ? "Artist" : kind === "album" ? "Album" : "Playlist"}</div><h1>${esc(d.title)}</h1><p>${esc([d.subtitle, d.meta].filter(Boolean).join(" · "))}</p></div></div>
       <div class="actions">
-        ${d.tracks.length ? `<button class="btn" data-act="play" data-key="${key}" data-i="0">${ic("play", 18)}Play</button><button class="btn ghost" data-act="shuffle-list" data-key="${key}">${ic("shuffle", 18)}Shuffle</button>` : ""}
+        ${d.tracks.length ? `<button class="btn" data-act="play" data-key="${esc(key)}" data-i="0">${ic("play", 18)}Play</button><button class="btn ghost" data-act="shuffle-list" data-key="${esc(key)}">${ic("shuffle", 18)}Shuffle</button>` : ""}
         ${kind === "artist" && d.radioVideoId ? `<button class="btn ghost" data-act="artist-radio" data-id="${d.radioVideoId}">${ic("radio", 18)}Radio</button>` : ""}
         <button class="btn ghost" data-act="save-coll" id="save-coll">${saved ? (kind === "artist" ? "Following" : "In library") : (kind === "artist" ? "Follow" : "Save to library")}</button>
       </div>

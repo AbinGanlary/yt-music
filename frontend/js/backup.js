@@ -44,21 +44,26 @@ document.addEventListener("change", async (e) => {
 });
 
 const parse = (raw, d) => { try { return JSON.parse(raw) ?? d; } catch { return d; } };
+const ID = /^[\w-]{6,20}$/;
+const goodTrack = (x) => x && typeof x === "object" && ID.test(String(x.videoId));
+const list = (raw) => { const v = parse(raw, []); return Array.isArray(v) ? v : []; };
 const union = (a, b, key) => { const seen = new Set(a.map(key)); return a.concat(b.filter((x) => !seen.has(key(x)))); };
 /** Merge a backup into what is on this device: lists are combined, settings come from the backup. */
 function restore(data) {
   const done = [], put = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   for (const k of ["likes", "dislikes", "history", "signals"]) {
     if (data[k] == null) continue;
-    const cur = parse(localStorage.getItem(k), []), inc = parse(data[k], []);
+    const cur = parse(localStorage.getItem(k), []), inc = list(data[k]).filter(k === "signals" ? (x) => x && typeof x === "object" : goodTrack);
     put(k, union(cur, inc, k === "signals" ? (x) => x.at : (x) => x.videoId));
     if (k === "likes") done.push(`${inc.length} likes`);
   }
   if (data.recent != null) put("recent", union(parse(localStorage.getItem("recent"), []), parse(data.recent, []), (x) => x));
-  if (data.genres != null) { put("genres", union(parse(localStorage.getItem("genres"), []), parse(data.genres, []), (x) => x.id)); done.push("genres"); }
+  if (data.genres != null) { put("genres", union(parse(localStorage.getItem("genres"), []), list(data.genres).filter((g) => g && /^[\w-]{1,60}$/.test(String(g.id))), (x) => x.id)); done.push("genres"); }
   if (data.library != null) {
     const cur = parse(localStorage.getItem("library"), { playlists: [], saved: [] }), inc = parse(data.library, { playlists: [], saved: [] });
-    put("library", { playlists: union(cur.playlists || [], inc.playlists || [], (x) => x.id), saved: union(cur.saved || [], inc.saved || [], (x) => x.kind + x.id) });
+    const pls = (inc.playlists || []).filter((p) => p && /^[\w-]{1,40}$/.test(String(p.id))).map((p) => ({ ...p, tracks: (p.tracks || []).filter(goodTrack) }));
+    const sv = (inc.saved || []).filter((x) => x && /^[\w-]{1,60}$/.test(String(x.id)) && ["album", "playlist", "artist"].includes(x.kind));
+    put("library", { playlists: union(cur.playlists || [], pls, (x) => x.id), saved: union(cur.saved || [], sv, (x) => x.kind + x.id) });
     done.push(`${(inc.playlists || []).length} playlists`);
   }
   if (data.stats != null) {
@@ -66,7 +71,7 @@ function restore(data) {
     put("stats", { log: union(cur.log || [], inc.log || [], (x) => x[0] + x[1]).sort((a, b) => a[0] - b[0]), meta: { ...(inc.meta || {}), ...(cur.meta || {}) } });
     done.push("analytics");
   }
-  for (const k of ["settings", "taste"]) if (data[k] != null) { localStorage.setItem(k, data[k]); done.push(k); }
+  for (const k of ["settings", "taste"]) if (typeof data[k] === "string" && parse(data[k], null) && typeof parse(data[k], null) === "object") { localStorage.setItem(k, data[k]); done.push(k); }
   return done;
 }
 

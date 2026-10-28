@@ -2,6 +2,8 @@
 
 Personal-use tool. Do not expose it to the public internet without APP_TOKEN set.
 """
+import hmac
+import logging
 import mimetypes
 import os
 import random
@@ -35,6 +37,7 @@ FORMATS = {
     "low": "bestaudio[ext=m4a][abr<=64]/worstaudio[ext=m4a]/worstaudio",
 }
 
+log = logging.getLogger("uvicorn.error")
 app = FastAPI(title="grooves")
 
 # The native iOS app loads its UI from capacitor://localhost and talks to this server cross-origin.
@@ -76,8 +79,8 @@ def _cached(key: str, ttl: int, fn: Callable):
 def auth(request: Request):
     if not APP_TOKEN:
         return
-    given = request.query_params.get("token") or request.headers.get("x-token")
-    if given != APP_TOKEN:
+    given = request.headers.get("x-token") or request.query_params.get("token") or ""
+    if not hmac.compare_digest(given.encode(), APP_TOKEN.encode()):
         raise HTTPException(401, "bad token")
 
 
@@ -387,15 +390,17 @@ def langs(lang: str, loc: Optional[str] = None):
 IMG_HOSTS = ("googleusercontent.com", "ytimg.com", "ggpht.com")
 
 
-@app.get("/api/img")
+@app.get("/api/img", dependencies=[Depends(auth)])
 async def img(u: str, s: int = 544):
     """Same-origin thumbnail proxy so the service worker can cache art for offline use."""
-    host = urlparse(u).hostname or ""
-    if not host.endswith(IMG_HOSTS):
+    parts = urlparse(u)
+    host = (parts.hostname or "").lower()
+    if parts.scheme != "https" or not any(host == d or host.endswith("." + d) for d in IMG_HOSTS):
         raise HTTPException(400, "host not allowed")
+    s = max(16, min(s, 1200))
     if "googleusercontent.com" in host or "ggpht.com" in host:
         u = re.sub(r"=[ws]\d+(-h\d+)?.*$", f"=w{s}-h{s}-l90-rj", u)
-    r = await _client.get(u)
+    r = await _client.get(u, follow_redirects=False)
     if r.status_code != 200:
         raise HTTPException(502, "image fetch failed")
     return Response(
@@ -526,7 +531,8 @@ async def stream(video_id: str, request: Request, q: str = "high"):
     try:
         entry = await _run_sync(_resolve, video_id, q)
     except Exception as e:  # yt-dlp raises many types
-        raise HTTPException(502, f"resolve failed: {e}")
+        log.warning("resolve failed for %s: %s", video_id, e)
+        raise HTTPException(502, "could not resolve this song")
 
     start, end = 0, None
     m = re.fullmatch(r"bytes=(\d*)-(\d*)", request.headers.get("range", ""))
@@ -637,7 +643,8 @@ async def ringtone(video_id: str, start: float = 0, dur: float = 30):
     try:
         entry = await _run_sync(_resolve, video_id, "high")
     except Exception as e:
-        raise HTTPException(502, f"resolve failed: {e}")
+        log.warning("resolve failed for %s: %s", video_id, e)
+        raise HTTPException(502, "could not resolve this song")
     parts, pos, total = [], 0, None
     while total is None or pos < total:  # the whole file is only ~4 MB; fetch it in ranged chunks
         h = dict(entry["headers"])

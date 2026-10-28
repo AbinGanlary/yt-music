@@ -58,8 +58,7 @@ bundle ID, the build uses it; if it is a wildcard, the build uses the "Bundle ID
   cache, because iOS otherwise picks IPv4 or IPv6 per connection and YouTube treats them differently. If it is unavailable the
   engine falls back to Capacitor's HTTP (fresh session per request, cookies wiped).
 - **Playback modes:** Settings → Playback offers Auto, Stream, or Download first (with next-song prefetch).
-- **When YouTube changes something:** if you also run the optional server and set its address, the app loads the engine
-  from the server (falling back to its bundled copy), so a fix is a file update there. Otherwise rebuild the app.
+- **When YouTube changes something:** the app always runs its bundled engine (code is never loaded from a server for safety), so a fix means rebuilding the app.
 - **Tests:** the engine also runs in Node, so each endpoint can be compared with the Python server's output.
 
 ## What the app does differently from the website

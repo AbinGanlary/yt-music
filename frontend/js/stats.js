@@ -94,7 +94,7 @@ register("stats", () => {
         <div><span>Top song</span><b>${esc(topTrackMeta?.[0] || "")}</b></div>
         <div><span>Peak hour</span><b>${d.secs ? hour12(peak) : "–"}</b></div>
       </div>
-      <button class="btn" data-act="play" data-key="${key}" data-i="0">${ic("play", 18)}Play my top songs</button>
+      <button class="btn" data-act="play" data-key="${esc(key)}" data-i="0">${ic("play", 18)}Play my top songs</button>
     </div>` : ""}
     <div class="stat-grid">
       <div class="stat"><b>${fmtDur(d.secs)}</b><span>Listening time</span></div>

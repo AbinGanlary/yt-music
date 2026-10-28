@@ -1,6 +1,6 @@
 // Service worker: app shell works offline; API answers fall back to the last good copy; art is cached.
 // Audio (/stream) is never cached here: saved songs live in IndexedDB.
-const VERSION = "v1.0.0";
+const VERSION = "v1.0.1";
 const SHELL = `grooves-shell-${VERSION}`, DATA = `grooves-data-${VERSION}`, IMG = `grooves-img-${VERSION}`;
 const SHELL_FILES = [
   "/", "/styles.css", "/manifest.webmanifest",

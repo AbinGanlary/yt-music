@@ -6,7 +6,7 @@ import * as S from "./settings.js";
 import { ic } from "./icons.js";
 
 export const APP_NAME = "YT Music";
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.0.1";
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -44,15 +44,15 @@ export function trackRow(t, i, key, o = {}) {
   const img = `<img class="cv ${o.cv || ""}" loading="lazy" decoding="async" src="${art(t.thumbnail, 120)}" alt="">`;
   const cv = o.eq ? `<span class="cvwrap">${img}${isCur ? eqMask : ""}</span>` : img;
   const ctx = o.ctx ? ` data-ctx="${esc(o.ctx)}"` : "";
-  return `<div class="${cls}" role="button" tabindex="0" data-act="${o.act || "play"}" data-key="${key}" data-i="${i}" data-id="${t.videoId}"${ctx} aria-label="Play ${esc(t.title)} by ${esc(sub(t))}">
+  return `<div class="${cls}" role="button" tabindex="0" data-act="${o.act || "play"}" data-key="${esc(key)}" data-i="${i}" data-id="${esc(t.videoId)}"${ctx} aria-label="Play ${esc(t.title)} by ${esc(sub(t))}">
     ${cv}<span class="qmeta"><b>${esc(t.title)}</b><span>${esc(o.sub ?? sub(t))}</span></span>
-    ${o.right ?? `<button class="dots" data-act="menu" data-id="${t.videoId}"${ctx} aria-label="More actions">${ic("dots", 20)}</button>`}
+    ${o.right ?? `<button class="dots" data-act="menu" data-id="${esc(t.videoId)}"${ctx} aria-label="More actions">${ic("dots", 20)}</button>`}
   </div>`;
 }
 export const trackRows = (arr, key, o) => arr.map((t, i) => trackRow(t, i, key, o)).join("");
 
 export const trackCard = (t, i, key, n) => `
-  <button class="tcard${P.current()?.videoId === t.videoId ? " now" : ""}" data-act="play" data-key="${key}" data-i="${i}" data-id="${t.videoId}" aria-label="Play ${esc(t.title)} by ${esc(sub(t))}">
+  <button class="tcard${P.current()?.videoId === t.videoId ? " now" : ""}" data-act="play" data-key="${esc(key)}" data-i="${i}" data-id="${esc(t.videoId)}" aria-label="Play ${esc(t.title)} by ${esc(sub(t))}">
     <img class="cv" loading="lazy" decoding="async" src="${art(t.thumbnail, 300)}" alt="">
     ${n ? `<i class="n">${n}</i>` : ""}
     <span class="qmeta"><b>${esc(t.title)}</b><span>${esc(sub(t))}</span></span>
