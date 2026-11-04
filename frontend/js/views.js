@@ -4,6 +4,7 @@ import * as store from "./store.js";
 import * as P from "./player.js";
 import * as S from "./settings.js";
 import { ic, logo } from "./icons.js";
+import { pending as pendingUpdate, checkNow as checkUpdate, openUpdate } from "./update.js";
 import {
   $, $$, esc, APP_NAME, APP_VERSION, toast, lists, reg, artistReg, sub, gradient, cover, trackRows, trackShelf, collShelf, shelf,
   collCard, skShelf, skRows, fail, empty, hue, applyAccent,
@@ -36,13 +37,16 @@ register("home", () => {
   const header = `<header class="hdr home-hdr"><div class="brand">${logo(28)}<span class="brand-name">${APP_NAME}</span></div><div class="right">${searchBtn}${gearBtn}</div></header>`;
   const installBanner = isIOS && !standalone && !store.kv.get("hideInstall", false)
     ? `<div class="banner"><button class="ib x" data-act="hide-install" aria-label="Dismiss">${ic("close", 18)}</button><b>Install ${APP_NAME}.</b> Tap <b>Share</b>, then <b>Add to Home Screen</b> for lock-screen controls and background play.</div>` : "";
+  const upd = isNative() ? pendingUpdate() : null;
+  const updateBanner = upd && store.kv.get("hideUpdate", "") !== upd.version
+    ? `<div class="banner"><button class="ib x" data-act="hide-update" aria-label="Dismiss">${ic("close", 18)}</button><b>${APP_NAME} v${esc(upd.version)} is available.</b> See what's new and download it.<br><button class="btn sm" data-act="update-open">View update</button></div>` : "";
   const tasteBanner = !S.hasTaste() && !store.kv.get("hideTaste", false)
     ? `<div class="banner"><button class="ib x" data-act="hide-taste" aria-label="Dismiss">${ic("close", 18)}</button><b>Make it yours.</b> Pick your music languages and a few artists you like, and Home and your queue will follow.<br><button class="btn sm" data-act="open-taste">Pick now</button></div>` : "";
   page(header, `
     <div class="chips-row hs" role="group" aria-label="Moods"><button class="chip${homeMood < 0 ? " on" : ""}" data-act="home-mood" data-i="-1" aria-pressed="${homeMood < 0}">All</button>${HOME_MOODS.map(([label], i) => `<button class="chip${homeMood === i ? " on" : ""}" data-act="home-mood" data-i="${i}" aria-pressed="${homeMood === i}">${label}</button>`).join("")}</div>
     <div id="moodbox"></div>
     <div id="home-rest"${homeMood >= 0 ? " hidden" : ""}>
-    ${installBanner}${tasteBanner}
+    ${installBanner}${updateBanner}${tasteBanner}
     <div id="ytsec"></div>
     ${hist.length ? `<h2 class="h2">Listen again</h2>${trackShelf(hist.slice(0, 12), reg("hist", hist.slice(0, 12)), false, "grid-d")}` : ""}
     <div id="mix"></div>
@@ -453,6 +457,7 @@ function settingsDefs() {
       { id: "ver", k: "val", t: "Version", d: isNative() ? "The app build you are using." : "The build you are using.", v: "v" + APP_VERSION + (isNative() ? " (iPhone app)" : " (web)") },
       { id: "conn", k: "btn", t: isNative() ? "Music source" : "Access token", d: isNative() ? "Play straight from YouTube Music on this phone, or use your own PC server." : "The access token your backend asks for.", b: isNative() ? (getSource() === "device" ? "This phone" : getBase() ? new URL(getBase()).host : "Set up") : "Token", act: "open-connection" },
       ...(isNative() ? [] : [{ id: "upd", k: "btn", t: "Update app", d: "Fetch the latest version. Your saved songs, likes and settings are kept.", b: "Update", act: "app-update" }]),
+      ...(isNative() ? [{ id: "appupd", k: "btn", t: "App update", d: pendingUpdate() ? `Version ${pendingUpdate().version} is available.` : "Checks GitHub for a newer version. Your songs, likes and settings are kept when you install it over this one.", b: pendingUpdate() ? "View" : "Check", fn: () => (pendingUpdate() ? openUpdate() : checkUpdate()) }] : []),
       ...(isNative() ? [{ id: "netcheck", k: "btn", t: "Connection check", d: "Shows your phone's network addresses and whether YouTube accepts a test stream. Handy if songs don't start.", b: "Run", fn: async () => { toast("Checking…", 60000); toast(await checkConnection(), 40000); } }] : []),
       ...(isNative() ? [{ id: "netreset", k: "btn", t: "Reset connection", d: "Clears saved cookies and starts a fresh YouTube session. Try this if songs stop starting or only play for a minute.", b: "Reset", fn: async () => { toast(await resetConnection(), 6000); } }] : []),
       { id: "last", k: "val", t: "Last song played", d: "How the last song reached the player. Useful when a song is slow to start.", v: lastPlay() },

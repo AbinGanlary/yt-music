@@ -211,8 +211,8 @@ export async function downloadAudio(id, use = "play", onProgress = () => {}, fre
 }
 
 /** What the player loads: a direct address, in both modes. On-device it is a phone-bound YouTube address. */
-export async function getAudio(id, use = "play", { fresh = false, asBlob = false } = {}) {
-  if (asBlob) { const b = await downloadAudio(id, use, () => {}, fresh); return { url: URL.createObjectURL(b), blob: true, size: b.size }; }   // fetch with the app's own HTTP, play from memory
+export async function getAudio(id, use = "play", { fresh = false, asBlob = false, onProgress = () => {} } = {}) {
+  if (asBlob) { const b = await downloadAudio(id, use, onProgress, fresh); return { url: URL.createObjectURL(b), blob: true, size: b.size }; }   // fetch with the app's own HTTP, play from memory
   return { url: await resolveStream(id, use, { fresh }), blob: false };
 }
 /** Get the next song's address ready so the hand-off is quick. */

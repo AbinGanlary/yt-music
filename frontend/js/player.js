@@ -201,13 +201,16 @@ async function load(track, { autoplay = true, at = 0, force = false } = {}) {
       const ahead = pre.get(track.videoId);
       if (ahead) {
         pre.delete(track.videoId);
-        const b = await ahead;
+        emit("loadprogress", { id: track.videoId, p: 0 });
+        const b = await ahead.finally(() => emit("loadprogress", { id: track.videoId, p: -1 }));
         if (b) { src = { url: URL.createObjectURL(b), blob: true, size: b.size }; curMethod = "prefetch"; }
       }
       if (!src) {
         const first = ++plays % 8 !== 0 || mode() !== "auto";     // every 8th song in Auto re-tests streaming
         const dlFirst = mode() === "download" || (mode() === "auto" && (v4Downloads() || fbStreak() >= 2) && first);
-        src = await getAudio(track.videoId, "play", { asBlob: dlFirst, fresh: force ? 2 : false });   // force: a new YouTube session
+        if (dlFirst) emit("loadprogress", { id: track.videoId, p: 0 });
+        try { src = await getAudio(track.videoId, "play", { asBlob: dlFirst, fresh: force ? 2 : false, onProgress: (p) => { if (my === seq) emit("loadprogress", { id: track.videoId, p }); } }); }   // force: a new YouTube session
+        finally { if (dlFirst) emit("loadprogress", { id: track.videoId, p: -1 }); }
         curMethod = dlFirst ? "download" : "stream";
       }
       if (my !== seq) { if (src.blob) URL.revokeObjectURL(src.url); return; }

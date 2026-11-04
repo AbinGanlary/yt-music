@@ -5,7 +5,7 @@ const SHELL = `grooves-shell-${VERSION}`, DATA = `grooves-data-${VERSION}`, IMG 
 const SHELL_FILES = [
   "/", "/styles.css", "/manifest.webmanifest",
   "/js/app.js", "/js/api.js", "/js/store.js", "/js/player.js", "/js/settings.js",
-  "/js/ui.js", "/js/nav.js", "/js/views.js", "/js/sheets.js", "/js/now.js", "/js/mix.js", "/js/stats.js", "/js/backup.js", "/js/account.js", "/js/icons.js",
+  "/js/ui.js", "/js/nav.js", "/js/views.js", "/js/sheets.js", "/js/now.js", "/js/mix.js", "/js/stats.js", "/js/backup.js", "/js/account.js", "/js/gestures.js", "/js/update.js", "/js/icons.js",
   "/fonts/bricolage.woff2", "/fonts/dmsans.woff2",
   "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png",
 ];

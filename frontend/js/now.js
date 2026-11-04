@@ -36,6 +36,7 @@ export function init() {
   P.bus.addEventListener("mode", paintMode);
   P.bus.addEventListener("time", paintTime);
   P.bus.addEventListener("queue", () => { if (npTab === "queue") drawTab(); });
+  P.bus.addEventListener("loadprogress", (e) => paintLoad(e.detail));
   document.addEventListener("marks", paintMarks);
   document.addEventListener("close-np", closeNP);
   document.addEventListener("dl-progress", (e) => {
@@ -96,6 +97,14 @@ function paintTrack(t) {
   paintMarks();
   drawTab();
   if (S.get().accent === "art" && tintFor !== t.videoId) { tintFor = t.videoId; tintFrom(art(t.thumbnail, 120)); }
+}
+/** While a song is being fetched, the mini player says so and its bar shows the download. */
+function paintLoad({ id, p }) {
+  const t = P.current(), on = p >= 0 && t?.videoId === id;
+  if (p < 0 && t && t.videoId !== id) return;                // a finished fetch of some earlier song
+  $("#mini").classList.toggle("loading", on);
+  $("#mini-artist").textContent = on ? (p > 0 && p < 1 ? `Downloading ${Math.round(p * 100)}%` : "Getting the song ready…") : (t ? sub(t) : "");
+  if (on) $("#mini-prog").style.width = p * 100 + "%";
 }
 function paintState() {
   const playing = !P.audio.paused;

@@ -3,7 +3,7 @@ import * as store from "./store.js";
 import * as P from "./player.js";
 import * as S from "./settings.js";
 import { $, toast, lists, byId, applyAccent, applyStyle } from "./ui.js";
-import { show, navigate, back, setTab } from "./nav.js";
+import { show, navigate, back, setTab, rerender, getCur } from "./nav.js";
 import * as views from "./views.js";
 import * as sheets from "./sheets.js";
 import * as now from "./now.js";
@@ -11,6 +11,8 @@ import * as mix from "./mix.js";
 import * as stats from "./stats.js";
 import * as backup from "./backup.js";
 import * as account from "./account.js";
+import "./gestures.js";
+import * as update from "./update.js";
 
 /** Drop the cached app files and reload. Saved songs (IndexedDB) and settings are untouched. */
 async function updateApp() {
@@ -22,7 +24,7 @@ async function updateApp() {
   location.reload();
 }
 
-const modules = [views.actions, sheets.actions, now.actions, mix.actions, stats.actions, backup.actions, account.actions];
+const modules = [views.actions, sheets.actions, now.actions, mix.actions, stats.actions, backup.actions, account.actions, update.actions];
 
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
@@ -105,6 +107,7 @@ applyAccent();
 applyStyle();
 now.init();
 views.buildChrome();
+if (isNative()) setTimeout(() => update.check().then((u) => u && getCur() === "home" && rerender()).catch(() => {}), 3000);   // quiet check for a newer release
 store.initDownloads().finally(() => {
   show({ name: "home" });
   P.restore();
