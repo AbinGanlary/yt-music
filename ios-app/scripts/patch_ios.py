@@ -58,27 +58,32 @@ def patch_appdelegate():
     print("AppDelegate.swift: audio session set to .playback")
 
 
+PLUGINS = [("Ipv4HttpPlugin", "Ipv4Http.swift"), ("SignerPlugin", "Signer.swift")]
+
+
 def patch_native_http():
-    """Adds the IPv4-only HTTPS client (native/Ipv4Http.swift) to AppDelegate.swift and registers it for the bridge."""
+    """Adds the native plugins (IPv4-only HTTPS client, certificate store) to AppDelegate.swift and registers them for the bridge."""
     p = APP / "AppDelegate.swift"
     s = p.read_text(encoding="utf-8")
-    if "Ipv4HttpPlugin" in s:
-        print("AppDelegate.swift: Ipv4Http already added")
-    else:
-        for mod in ("Foundation", "Network", "Security"):
-            if f"import {mod}" not in s:
-                s = s.replace("import UIKit", f"import UIKit\nimport {mod}", 1)
-        if "import Capacitor" not in s:
-            s = s.replace("import UIKit", "import UIKit\nimport Capacitor", 1)
-        s = s.rstrip() + "\n\n" + (ROOT / "native" / "Ipv4Http.swift").read_text(encoding="utf-8")
-        p.write_text(s, encoding="utf-8")
-        print("AppDelegate.swift: added Ipv4HttpPlugin")
+    for mod in ("Foundation", "Network", "Security"):
+        if f"import {mod}" not in s:
+            s = s.replace("import UIKit", f"import UIKit\nimport {mod}", 1)
+    if "import Capacitor" not in s:
+        s = s.replace("import UIKit", "import UIKit\nimport Capacitor", 1)
+    for cls, src in PLUGINS:
+        if cls in s:
+            print(f"AppDelegate.swift: {cls} already added")
+        else:
+            s = s.rstrip() + "\n\n" + (ROOT / "native" / src).read_text(encoding="utf-8")
+            print(f"AppDelegate.swift: added {cls}")
+    p.write_text(s, encoding="utf-8")
     cfg = APP / "capacitor.config.json"
     c = json.loads(cfg.read_text(encoding="utf-8"))
     lst = c.setdefault("packageClassList", [])
-    if "Ipv4HttpPlugin" not in lst:
-        lst.append("Ipv4HttpPlugin")
-        cfg.write_text(json.dumps(c, indent=2), encoding="utf-8")
+    for cls, _ in PLUGINS:
+        if cls not in lst:
+            lst.append(cls)
+    cfg.write_text(json.dumps(c, indent=2), encoding="utf-8")
     print(f"capacitor.config.json: packageClassList={c['packageClassList']}")
 
 

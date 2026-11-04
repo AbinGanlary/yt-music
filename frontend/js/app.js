@@ -13,6 +13,7 @@ import * as backup from "./backup.js";
 import * as account from "./account.js";
 import "./gestures.js";
 import * as update from "./update.js";
+import * as signing from "./signing.js";
 
 /** Drop the cached app files and reload. Saved songs (IndexedDB) and settings are untouched. */
 async function updateApp() {
@@ -24,7 +25,7 @@ async function updateApp() {
   location.reload();
 }
 
-const modules = [views.actions, sheets.actions, now.actions, mix.actions, stats.actions, backup.actions, account.actions, update.actions];
+const modules = [views.actions, sheets.actions, now.actions, mix.actions, stats.actions, backup.actions, account.actions, update.actions, signing.actions];
 
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
