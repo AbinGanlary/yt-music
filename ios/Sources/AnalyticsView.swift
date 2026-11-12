@@ -29,6 +29,7 @@ struct AnalyticsView: View {
     }
 
     private func duration(_ secs: Double) -> String {
+        if secs < 60 { return "\(Int(secs)) sec" }
         let m = Int(secs / 60)
         return m >= 60 ? "\(m / 60) h \(m % 60) min" : "\(m) min"
     }
@@ -73,7 +74,7 @@ struct AnalyticsView: View {
     private func content(_ plays: [PlayEvent]) -> some View {
         let total = plays.reduce(0) { $0 + $1.secs }
         let days = lastSevenDays(plays)
-        let peak = max(1, days.map { $0.mins }.max() ?? 1)
+        let peak = max(5, days.map { $0.mins }.max() ?? 5)      // a scale of at least 5 minutes, so a few seconds don't fill the chart
         let artists = top(plays) { $0.artist.components(separatedBy: ", ").first ?? "" }
         let songs = top(plays) { $0.title }
 
@@ -155,7 +156,7 @@ struct AnalyticsView: View {
 
     private func hourCard(_ plays: [PlayEvent]) -> some View {
         let hours = byHour(plays)
-        let peak = max(1, hours.max() ?? 1)
+        let peak = max(5, hours.max() ?? 5)
         let best = hours.firstIndex(of: hours.max() ?? 0) ?? 0
         return VStack(alignment: .leading, spacing: 10) {
             Text("By hour of the day").font(.title3.bold())

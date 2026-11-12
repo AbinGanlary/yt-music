@@ -101,7 +101,7 @@ struct SearchListView: View {
                 Button("Save as playlist") {
                     let p = player.lib.newPlaylist(name.isEmpty ? "Song list" : name)
                     list.forEach { player.lib.add($0, to: p.id) }
-                    player.notify("Saved \(list.count) songs")
+                    player.notify("Saved \(songsLabel(list.count))")
                     dismiss()
                 }
                 .disabled(list.isEmpty)

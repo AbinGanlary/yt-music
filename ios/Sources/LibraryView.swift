@@ -21,7 +21,7 @@ struct LibraryView: View {
         NavigationStack {
             List {
                 NavigationLink(value: LibSource.likes) {
-                    entry("heart.fill", "Liked songs", "\(lib.likes.count) songs")
+                    entry("heart.fill", "Liked songs", songsLabel(lib.likes.count))
                 }
                 .listRowBackground(Color.clear)
                 if signedIn {
@@ -31,18 +31,18 @@ struct LibraryView: View {
                     .listRowBackground(Color.clear)
                 }
                 NavigationLink(value: LibSource.downloads) {
-                    entry("arrow.down.circle.fill", "Downloads", "\(player.downloads.tracks.count) songs")
+                    entry("arrow.down.circle.fill", "Downloads", songsLabel(player.downloads.tracks.count))
                 }
                 .listRowBackground(Color.clear)
                 NavigationLink(value: LibSource.history) {
-                    entry("clock.fill", "History", "\(lib.history.count) songs")
+                    entry("clock.fill", "History", songsLabel(lib.history.count))
                 }
                 .listRowBackground(Color.clear)
 
                 Section {
                     ForEach(lib.playlists) { p in
                         NavigationLink(value: LibSource.playlist(p.id)) {
-                            entry("music.note.list", p.name, "\(p.tracks.count) songs")
+                            entry("music.note.list", p.name, songsLabel(p.tracks.count))
                         }
                         .listRowBackground(Color.clear)
                         .contextMenu {

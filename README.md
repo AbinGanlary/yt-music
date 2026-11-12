@@ -12,11 +12,20 @@ A native SwiftUI app that talks to YouTube Music straight from the phone. No ser
 ![Engine](https://img.shields.io/badge/engine-youtubei.js-ff6a3d)
 ![Build](https://img.shields.io/badge/build-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)
 
-[Features](#features) · [How it works](#how-it-works) · [Get the app](#get-the-app) · [Web version](#web-version-and-optional-server) · [Project layout](#project-layout)
+[Screenshots](#screenshots) · [Features](#features) · [How it works](#how-it-works) · [Get the app](#get-the-app) · [Web version](#web-version-and-optional-server) · [Project layout](#project-layout)
 
 </div>
 
 <br>
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/ios-mix.jpg" width="220" alt="Mix"><br><sub><b>Mix</b><br>your own genres and moods</sub></td>
+    <td align="center"><img src="docs/screenshots/ios-settings.jpg" width="220" alt="Settings"><br><sub><b>Settings</b><br>playback, downloads, accent colour</sub></td>
+  </tr>
+</table>
 
 ## Features
 
@@ -108,7 +117,7 @@ The same app also exists as a website (installable as a PWA) in `frontend/`, pla
   </tr>
 </table>
 
-<sub>Web version screenshots, with invented songs and generated artwork.</sub>
+<sub>The website version, with invented songs and generated artwork.</sub>
 
 ## Project layout
 

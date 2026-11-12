@@ -65,6 +65,13 @@ struct SettingsView: View {
                     Toggle("Keep playing similar songs", isOn: $player.autoplay)
                     Toggle("Dynamic queue", isOn: $dynamicQueue)
                     Toggle("Skip non-music parts", isOn: $sponsorBlock)
+                } header: {
+                    Text("Playback")
+                } footer: {
+                    Text("Similar songs are added when your queue is about to end. Dynamic queue stops lining up an artist you keep skipping. Skipping uses SponsorBlock to jump over intros, outros and talking in music videos.")
+                }
+
+                Section {
                     Picker("Audio quality", selection: $quality) {
                         Text("High").tag("high")
                         Text("Data saver").tag("low")
@@ -75,9 +82,9 @@ struct SettingsView: View {
                         Text("Download first").tag("download")
                     }
                 } header: {
-                    Text("Playback")
+                    Text("Sound")
                 } footer: {
-                    Text("Similar songs are added when your queue is about to end. Dynamic queue stops lining up an artist you keep skipping. Skipping uses SponsorBlock to jump over intros, outros and talking in music videos. High is about 128 kbps (4 MB a song); Data saver is about 48 kbps. Auto streams, and switches to downloading first if your phone is refused a stream. Stream never downloads. Download first waits for the whole song, then plays it.")
+                    Text("High is about 4 MB a song, Data saver about 1.6 MB. Auto streams and switches to downloading first if your phone is refused a stream. Stream never downloads. Download first waits for the whole song.")
                 }
 
                 Section {
