@@ -22,10 +22,20 @@ A native SwiftUI app that talks to YouTube Music straight from the phone. No ser
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/ios-mix.jpg" width="220" alt="Mix"><br><sub><b>Mix</b><br>your own genres and moods</sub></td>
-    <td align="center"><img src="docs/screenshots/ios-settings.jpg" width="220" alt="Settings"><br><sub><b>Settings</b><br>playback, downloads, accent colour</sub></td>
+    <td align="center"><img src="docs/screenshots/app-home.png" width="200" alt="Home"><br><sub><b>Home</b><br>listen again, quick picks</sub></td>
+    <td align="center"><img src="docs/screenshots/app-now.png" width="200" alt="Now Playing"><br><sub><b>Now Playing</b><br>like, speed, sleep, radio</sub></td>
+    <td align="center"><img src="docs/screenshots/app-lyrics.png" width="200" alt="Synced lyrics"><br><sub><b>Lyrics</b><br>synced, tap a line to jump</sub></td>
+    <td align="center"><img src="docs/screenshots/app-explore.png" width="200" alt="Explore"><br><sub><b>Explore</b><br>new releases, charts, moods</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/app-mix.png" width="200" alt="Mix"><br><sub><b>Mix</b><br>your own genres</sub></td>
+    <td align="center"><img src="docs/screenshots/app-library.png" width="200" alt="Library"><br><sub><b>Library</b><br>likes, downloads, playlists</sub></td>
+    <td align="center"><img src="docs/screenshots/app-analytics.png" width="200" alt="Analytics"><br><sub><b>Analytics</b><br>Wrapped, streak, by hour</sub></td>
+    <td align="center"><img src="docs/screenshots/app-settings.png" width="200" alt="Settings"><br><sub><b>Settings</b><br>playback, downloads, accent</sub></td>
   </tr>
 </table>
+
+<sub>Illustrations of the app's screens with invented songs and generated artwork (the source is in <code>docs/mockups</code>).</sub>
 
 ## Features
 
