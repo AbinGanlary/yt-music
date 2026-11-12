@@ -1,6 +1,6 @@
 // Back up and restore what lives on this device, and import a playlist from a pasted list or CSV.
-import { api } from "./api.js";
 import * as store from "./store.js";
+import { active } from "./sources.js";
 import { ic } from "./icons.js";
 import { $, esc, toast } from "./ui.js";
 import { navigate, getCur, rerender } from "./nav.js";
@@ -120,7 +120,7 @@ actions["imp-go"] = async (el) => {
   const worker = async () => {
     while (next < queries.length) {
       const i = next++;
-      try { const r = await api(`/api/search?q=${encodeURIComponent(queries[i])}&filter=songs&limit=3`); found[i] = r[0] || null; } catch { found[i] = null; }
+      try { const r = await active().search(queries[i], { filter: "songs", limit: 3 }); found[i] = r[0] || null; } catch { found[i] = null; }
       done++;
       if (msg) msg.textContent = `Matching songs… ${done} of ${queries.length}`;
     }

@@ -1,5 +1,6 @@
 // Page views. Each registers a renderer with nav.js; click handlers for view-specific data-act names live in `actions`.
 import { api, art, isNative, isDevice, getBase, getSource, checkConnection, resetConnection, signedIn, accountName } from "./api.js";
+import * as sources from "./sources.js";
 import * as store from "./store.js";
 import * as P from "./player.js";
 import * as S from "./settings.js";
@@ -34,6 +35,7 @@ let homeMood = -1;
 
 register("home", () => {
   const hist = store.getHistory(), tt = S.getTaste();
+  const on = (k) => !S.get().homeHide.includes(k);
   const header = `<header class="hdr home-hdr"><div class="brand">${logo(28)}<span class="brand-name">${APP_NAME}</span></div><div class="right">${searchBtn}${gearBtn}</div></header>`;
   const installBanner = isIOS && !standalone && !store.kv.get("hideInstall", false)
     ? `<div class="banner"><button class="ib x" data-act="hide-install" aria-label="Dismiss">${ic("close", 18)}</button><b>Install ${APP_NAME}.</b> Tap <b>Share</b>, then <b>Add to Home Screen</b> for lock-screen controls and background play.</div>` : "";
@@ -43,24 +45,24 @@ register("home", () => {
   const tasteBanner = !S.hasTaste() && !store.kv.get("hideTaste", false)
     ? `<div class="banner"><button class="ib x" data-act="hide-taste" aria-label="Dismiss">${ic("close", 18)}</button><b>Make it yours.</b> Pick your music languages and a few artists you like, and Home and your queue will follow.<br><button class="btn sm" data-act="open-taste">Pick now</button></div>` : "";
   page(header, `
-    <div class="chips-row hs" role="group" aria-label="Moods"><button class="chip${homeMood < 0 ? " on" : ""}" data-act="home-mood" data-i="-1" aria-pressed="${homeMood < 0}">All</button>${HOME_MOODS.map(([label], i) => `<button class="chip${homeMood === i ? " on" : ""}" data-act="home-mood" data-i="${i}" aria-pressed="${homeMood === i}">${label}</button>`).join("")}</div>
+    ${on("moods") ? `<div class="chips-row hs" role="group" aria-label="Moods"><button class="chip${homeMood < 0 ? " on" : ""}" data-act="home-mood" data-i="-1" aria-pressed="${homeMood < 0}">All</button>${HOME_MOODS.map(([label], i) => `<button class="chip${homeMood === i ? " on" : ""}" data-act="home-mood" data-i="${i}" aria-pressed="${homeMood === i}">${label}</button>`).join("")}</div>` : ""}
     <div id="moodbox"></div>
-    <div id="home-rest"${homeMood >= 0 ? " hidden" : ""}>
+    <div id="home-rest"${homeMood >= 0 && on("moods") ? " hidden" : ""}>
     ${installBanner}${updateBanner}${tasteBanner}
     <div id="ytsec"></div>
-    ${hist.length ? `<h2 class="h2">Listen again</h2>${trackShelf(hist.slice(0, 12), reg("hist", hist.slice(0, 12)), false, "grid-d")}` : ""}
+    ${hist.length && on("listen") ? `<h2 class="h2">Listen again</h2>${trackShelf(hist.slice(0, 12), reg("hist", hist.slice(0, 12)), false, "grid-d")}` : ""}
     <div id="mix"></div>
     <div id="because"></div>
-    <div class="sec-head"><div><div class="cap" style="margin:0">Start radio from a song</div><h2 class="h2">Quick picks</h2></div><button class="btn ghost sm d-only" data-act="play" data-key="quick" data-i="0">Play all</button></div>
+    ${on("quick") ? `<div class="sec-head"><div><div class="cap" style="margin:0">Start radio from a song</div><h2 class="h2">Quick picks</h2></div><button class="btn ghost sm d-only" data-act="play" data-key="quick" data-i="0">Play all</button></div>
     <div id="quick" class="qlist cols">${skRows}</div>
-    <div style="height:28px"></div>
-    <h2 class="h2">Trending</h2>
-    <div id="trend">${skShelf}</div>
+    <div style="height:28px"></div>` : ""}
+    ${on("trend") ? `<h2 class="h2">Trending</h2>
+    <div id="trend">${skShelf}</div>` : ""}
     </div>`);
-  if (homeMood >= 0) loadHomeMood();
+  if (homeMood >= 0 && on("moods")) loadHomeMood();
   if (signedIn()) loadYtHome();
 
-  if (S.hasTaste()) {
+  if (S.hasTaste() && on("mix")) {
     const label = [...tt.artists.slice(0, 2).map((a) => a.name), ...tt.languages.slice(0, 1)].join(", ");
     $("#mix").innerHTML = `<div class="sec-head"><h2 class="h2">Picked for you</h2><span class="cap" style="margin:0">${esc(label)}</span></div>${skShelf}`;
     const ids = tt.artists.slice(0, 6).map((a) => a.browseId).join(",");
@@ -69,7 +71,7 @@ register("home", () => {
       $("#mix").innerHTML = list.length ? `<div class="sec-head"><h2 class="h2">Picked for you</h2><span class="cap" style="margin:0">${esc(label)}</span></div>${trackShelf(list.slice(0, 16), reg("mix", list))}` : "";
     }).catch(() => { $("#mix") && ($("#mix").innerHTML = ""); });
   }
-  if (hist[0]) {
+  if (hist[0] && on("because")) {
     const h = `<div class="sec-head"><h2 class="h2">Because you played <i>${esc(hist[0].title)}</i></h2></div>`;
     $("#because").innerHTML = h + skShelf;
     api(`/api/radio/${hist[0].videoId}`).then((r) => {
@@ -78,12 +80,12 @@ register("home", () => {
       $("#because").innerHTML = list.length ? h + trackShelf(list, reg("because", list)) : "";
     }).catch(() => { $("#because") && ($("#because").innerHTML = ""); });
   }
-  api("/api/home").then((secs) => {
+  if (on("quick")) api("/api/home").then((secs) => {
     const items = [], seen = new Set();
     secs.flatMap((s) => s.items).forEach((t) => { if (!seen.has(t.videoId)) { seen.add(t.videoId); items.push(t); } });
     if (getCur() === "home") $("#quick").innerHTML = items.length ? trackRows(items.slice(0, 12), reg("quick", items.slice(0, 12))) : '<p class="note">Nothing here yet. Try searching.</p>';
   }).catch(() => getCur() === "home" && ($("#quick").innerHTML = fail("your picks", "reload-home")));
-  api(`/api/trending?country=${S.loc() || "ZZ"}`).then((t) => {
+  if (on("trend")) api(`/api/trending?country=${S.loc() || "ZZ"}`).then((t) => {
     if (getCur() === "home") $("#trend").innerHTML = t.length ? trackShelf(t.slice(0, 20), reg("trend", t.slice(0, 20)), true) : '<p class="note">No chart right now.</p>';
   }).catch(() => getCur() === "home" && ($("#trend").innerHTML = ""));
 });
@@ -205,6 +207,7 @@ register("search", () => {
     <div class="chips-row tight" style="padding-top:12px" role="group" aria-label="Result type">
       <button class="chip${searchState.filter === "songs" ? " on" : ""}" data-act="filter" data-f="songs">Songs</button>
       <button class="chip${searchState.filter === "videos" ? " on" : ""}" data-act="filter" data-f="videos">Videos</button>
+      <button class="chip" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap" data-act="list-open">${ic("plus", 14)} Search a list</button>
     </div>
     <main class="scroll"><div id="s-body"></div></main>`;
   const q = $("#q");
@@ -230,7 +233,7 @@ async function showSuggest() {
     return;
   }
   try {
-    const s = await api(`/api/suggest?q=${encodeURIComponent(q)}`);
+    const s = await sources.active().suggest(q);
     if ($("#q")?.value.trim() !== q) return;
     body.innerHTML = `<ul class="sugg">${s.map(li).join("")}</ul>`;
   } catch {}
@@ -244,7 +247,7 @@ export async function doSearch(q) {
   const dq = $("#dq"); if (dq) dq.value = q;
   $("#s-body").innerHTML = skRows;
   try {
-    searchState.results = await api(`/api/search?q=${encodeURIComponent(q)}&filter=${searchState.filter}`);
+    searchState.results = await sources.active().search(q, { filter: searchState.filter });
     if (getCur() === "search") drawResults();
   } catch { if (getCur() === "search") $("#s-body").innerHTML = fail("results", "retry-search"); }
 }
@@ -447,6 +450,11 @@ function settingsDefs() {
       { id: "accent", k: "swatch", t: "Accent colour", d: "Used for progress, likes and selected items. Artwork follows each song's cover.",
         opts: [...S.ACCENTS.map(([c, label]) => ({ label, c })), { label: "Artwork", c: "art" }], sel: [...S.ACCENTS.map((a) => a[0]), "art"].indexOf(s.accent),
         fn: (i) => { const o = [...S.ACCENTS.map((a) => a[0]), "art"][i]; S.set({ accent: o }); applyAccent(); } },
+      { id: "theme", k: "seg", t: "Theme", d: "Dark, light, or follow your phone. The Now Playing screen stays dark so covers look their best.",
+        opts: [{ label: "Dark" }, { label: "Light" }, { label: "Auto" }], sel: ["dark", "light", "auto"].indexOf(s.theme), fn: (i) => S.set({ theme: ["dark", "light", "auto"][i] }) },
+      { id: "acccustom", k: "color", t: "Custom accent", d: "Pick any colour. Text on buttons switches between dark and light so it stays readable.", v: /^#[\da-f]{6}$/i.test(s.accent) ? s.accent : "#ff6a3d" },
+      ...S.HOME_SECTIONS.map(([k, label]) => ({ id: "home-" + k, k: "sw", t: "Home: " + label, d: k === "moods" ? "The row of mood chips at the top of Home." : "Show this section on Home.", on: !s.homeHide.includes(k),
+        fn: () => S.set({ homeHide: s.homeHide.includes(k) ? s.homeHide.filter((x) => x !== k) : [...s.homeHide, k] }) })),
       { id: "uinav", k: "seg", t: "Tab bar and mini player", d: "Glass floats them over your music with a frosted look. Classic docks them at the bottom.",
         opts: [{ label: "Classic" }, { label: "Glass" }], sel: s.uiNav === "classic" ? 0 : 1, fn: (i) => S.set({ uiNav: i ? "glass" : "classic" }) },
       { id: "uinp", k: "seg", t: "Now Playing", d: "Blur fills the screen with the cover and fades it into the controls. Classic shows a small cover on a soft background.",
@@ -483,6 +491,7 @@ register("settings", () => {
     if (x.k === "sw") ctl = `<button class="switch${x.on ? " on" : ""}" role="switch" aria-checked="${x.on}" aria-label="${esc(x.t)}" data-act="set-item" data-id="${x.id}"><i></i></button>`;
     else if (x.k === "seg") ctl = `<div class="seg" role="group" aria-label="${esc(x.t)}">${x.opts.map((o, i) => `<button class="${x.sel === i ? "on" : ""}" aria-pressed="${x.sel === i}" data-act="set-item" data-id="${x.id}" data-opt="${i}">${o.label}</button>`).join("")}</div>`;
     else if (x.k === "swatch") ctl = `<div class="swatches" role="group" aria-label="${esc(x.t)}">${x.opts.map((o, i) => `<button class="${x.sel === i ? "on" : ""}" aria-label="${o.label}" aria-pressed="${x.sel === i}" data-act="set-item" data-id="${x.id}" data-opt="${i}"><i style="background:${o.c === "art" ? "conic-gradient(#ff6a3d,#f5c542,#2dd4a7,#7c8cff,#ff6a3d)" : o.c}"></i></button>`).join("")}</div>`;
+    else if (x.k === "color") ctl = `<input type="color" id="acc-custom" class="colorpick" value="${esc(x.v)}" aria-label="${esc(x.t)}">`;
     else if (x.k === "btn") ctl = `<button class="set-btn" data-act="${x.act || "set-item"}" data-id="${x.id}">${esc(x.b)}</button>`;
     else if (x.k === "val") ctl = `<span class="set-val">${esc(x.v)}</span>`;
     else if (x.k === "range") ctl = `<div class="fit"><input type="range" class="rg" id="fit-range" min="0" max="100" step="1" value="${x.v}" style="--p:${x.v}%" aria-label="${esc(x.t)}"><span class="set-val" id="fit-val">${x.v ? "+" + x.v + " px" : "Auto"}</span></div>`;

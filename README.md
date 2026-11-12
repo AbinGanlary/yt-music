@@ -42,7 +42,7 @@ Built as a native app that talks to YouTube Music straight from the phone. No se
 | **Ad-free, background playback** | Full-length audio streams straight from YouTube Music. Keeps playing with the screen locked, with lock-screen controls. |
 | **A queue that keeps going** | Every song starts a radio that keeps extending itself. **Dynamic queue** re-ranks what comes next from what you finish, skip and like. |
 | **Synced lyrics** | Time-synced lyrics from YouTube Music, with LRCLIB as a fallback for songs that have none. Tap a line to jump to it. |
-| **Offline** | Save songs for offline listening, export any song to **Files** as `.m4a`, or cut a ringtone clip. |
+| **Offline** | Save songs for offline listening, export any song to **Files** as `.m4a` with title, artist, album and cover written in, or cut a ringtone clip. |
 | **Playback you control** | Auto, Stream or Download-first playback, next-song prefetch, speed, sleep timer, AirPlay, optional **SponsorBlock** skipping for music videos. |
 
 ### Discover
@@ -62,13 +62,15 @@ Built as a native app that talks to YouTube Music straight from the phone. No se
 | **Analytics** | A Wrapped-style summary, listening time, top artists and songs, a streak, listening by day and by hour. Worked out on the device from your own play log. Nothing is uploaded. |
 | **Library** | Likes, your own playlists, saved albums and artists, history, and downloads. |
 | **Account (optional)** | Sign in with Google's TV device-code flow (you approve a short code at google.com/device; the app never sees your password) to show your YouTube Music home and liked songs. Experimental. |
+| **Search a list** | Paste several songs, check the best match for each line (tap to try the next one, or leave one out), then play them all, queue them, or save them as a playlist. |
 | **Import** | Build a playlist from a pasted list (`Song - Artist`) or a CSV exported from another app; each line is matched on YouTube Music. |
 | **Backup and restore** | One file with your likes, playlists, genres, analytics and settings. Restore it after reinstalling or on a new phone. |
 
 ### Look and feel
 
 - Two switchable styles: **Glass** (a floating, frosted tab bar and mini player) or **Classic**, and a **Blur** or **Classic** Now Playing screen.
-- Accent colours, or an accent that follows the artwork.
+- **Dark, light or automatic** theme (Now Playing stays dark), eight accent colours, any custom colour, or an accent that follows the artwork.
+- **Show or hide Home sections** (mood chips, Listen again, Picked for you, Because you played, Quick picks, Trending).
 - Designed for iPhone first; the same UI becomes a sidebar-and-panel layout on a desktop browser.
 
 ## How it works

@@ -13,6 +13,7 @@ import * as backup from "./backup.js";
 import * as account from "./account.js";
 import "./gestures.js";
 import * as update from "./update.js";
+import * as searchlist from "./searchlist.js";
 
 /** Drop the cached app files and reload. Saved songs (IndexedDB) and settings are untouched. */
 async function updateApp() {
@@ -24,7 +25,7 @@ async function updateApp() {
   location.reload();
 }
 
-const modules = [views.actions, sheets.actions, now.actions, mix.actions, stats.actions, backup.actions, account.actions, update.actions];
+const modules = [views.actions, sheets.actions, now.actions, mix.actions, stats.actions, backup.actions, account.actions, update.actions, searchlist.actions];
 
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-act]"); if (!el) return;
@@ -79,7 +80,9 @@ document.addEventListener("submit", (e) => {
   if (e.target.id === "dsearch") { e.preventDefault(); views.doSearch($("#dq").value); }
 });
 
-S.bus.addEventListener("change", (e) => { if ("accent" in e.detail) now.refreshAccent(); if ("uiNav" in e.detail || "uiNp" in e.detail) applyStyle(); });
+S.bus.addEventListener("change", (e) => { if ("accent" in e.detail) now.refreshAccent(); if ("uiNav" in e.detail || "uiNp" in e.detail || "theme" in e.detail) applyStyle(); });
+matchMedia("(prefers-color-scheme: light)").addEventListener?.("change", () => applyStyle());
+document.addEventListener("input", (e) => { if (e.target.id === "acc-custom") { S.set({ accent: e.target.value }); applyAccent(); } });
 document.addEventListener("need-connection", (e) => { if ($("#sheet").hidden) sheets.openConnection(e.detail?.reason); });
 document.addEventListener("connected", () => { setTab("home"); });
 let limitedAt = 0;

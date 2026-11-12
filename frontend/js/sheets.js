@@ -7,6 +7,7 @@ import { ic } from "./icons.js";
 import { $, $$, esc, toast, sub, cover } from "./ui.js";
 import { navigate, rerender, getCur, back, setTab } from "./nav.js";
 import { refreshSide } from "./views.js";
+import { tagM4a, coverBytes } from "./tagger.js";
 
 export const actions = {};
 let menuT = null, menuCtx = "";
@@ -78,9 +79,12 @@ export function openExport(t) {
   open(`<div class="sheet-title">Save to Files</div>${head(t)}
     <div class="sheet-pad"><p class="note" id="x-msg" style="padding:8px 0">Preparing the file…</p>
     <button class="btn wide" id="x-go" data-act="x-share" hidden>Save to Files</button>
-    <p class="fine">Pick <b>On My iPhone → Downloads</b> (or any folder) on the next screen. The file is an .m4a audio file.</p>
+    <p class="fine">Pick <b>On My iPhone → Downloads</b> (or any folder) on the next screen. The file is an .m4a audio file with the title, artist and album written into it, and the cover when it can be fetched.</p>
     <button class="mitem" data-act="s-ringtone" style="margin-top:8px">${ic("bell", 22)}<span>Make a ringtone from this song</span></button></div>`);
-  store.songBlob(t, (p) => { const m = $("#x-msg"); if (m) m.textContent = `Preparing… ${Math.round(p * 100)}%`; }).then((blob) => {
+  store.songBlob(t, (p) => { const m = $("#x-msg"); if (m) m.textContent = `Preparing… ${Math.round(p * 100)}%`; }).then(async (blob) => {
+    try {                                                 // title, artist, album and cover go into the file; if that fails the plain audio still saves
+      blob = await tagM4a(blob, { title: t.title, artist: (t.artists || []).join(", "), album: t.album || "", cover: await coverBytes(art(t.thumbnail, 544)) });
+    } catch {}
     pending = { blob, name: `${fileBase(t)}.m4a` };
     if ($("#x-msg")) { $("#x-msg").textContent = `Ready · ${mb(blob.size)}`; $("#x-go").hidden = false; }
   }).catch(() => { if ($("#x-msg")) $("#x-msg").textContent = "Couldn't get the audio. Check the connection and try again."; });

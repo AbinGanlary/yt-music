@@ -11,11 +11,15 @@ export const LANGUAGES = [
   "Gujarati", "Bhojpuri", "Haryanvi", "Urdu", "Korean", "Japanese", "Spanish", "Portuguese", "French", "Arabic",
 ];
 
-export const ACCENTS = [["#ff6a3d", "Coral"], ["#7c8cff", "Periwinkle"], ["#2dd4a7", "Mint"], ["#f5c542", "Amber"]];
+export const ACCENTS = [["#ff6a3d", "Coral"], ["#7c8cff", "Periwinkle"], ["#2dd4a7", "Mint"], ["#f5c542", "Amber"], ["#ff5c8a", "Rose"], ["#4cc3ff", "Sky"], ["#a78bfa", "Violet"], ["#a3e635", "Lime"]];
+/** Home sections that can be hidden (Settings → Appearance). */
+export const HOME_SECTIONS = [["moods", "Mood chips"], ["listen", "Listen again"], ["mix", "Picked for you"], ["because", "Because you played"], ["quick", "Quick picks"], ["trend", "Trending"]];
 const defaults = {
   quality: "high", dlQuality: "high", playback: "auto", sponsorBlock: false, dynamic: true, autoplay: true, smartDl: false, saveHistory: true,
   uiNav: "glass", uiNp: "blur", // "classic" | "glass" (tab bar + mini player), "classic" | "blur" (full-screen player)
   accent: "#ff6a3d",            // a colour, or "art" to follow the album artwork
+  theme: "dark",                // "dark" | "light" | "auto" (follow the phone)
+  homeHide: [],                 // ids from HOME_SECTIONS that are hidden on Home
   bottomNudge: 0,               // px to extend the app below the reported window height
   global: true,                 // Home, Quick picks, New releases, Trending and Charts show worldwide music; off = follow `location`
   location: "auto", country: "IN",

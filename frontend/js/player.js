@@ -1,7 +1,8 @@
 // Playback engine: one persistent <audio> element (required for iOS background audio),
 // a queue that tops itself up from YouTube Music radio, and Media Session lock-screen controls.
 // With "Dynamic queue" on, top-ups are re-ranked by what you finish, skip and like.
-import { api, getAudio, downloadAudio, warmStream, art, expectedOf } from "./api.js";
+import { api, downloadAudio, warmStream, art, expectedOf } from "./api.js";
+import * as sources from "./sources.js";
 import * as store from "./store.js";
 import * as settings from "./settings.js";
 
@@ -209,7 +210,7 @@ async function load(track, { autoplay = true, at = 0, force = false } = {}) {
         const first = ++plays % 8 !== 0 || mode() !== "auto";     // every 8th song in Auto re-tests streaming
         const dlFirst = mode() === "download" || (mode() === "auto" && (v4Downloads() || fbStreak() >= 2) && first);
         if (dlFirst) emit("loadprogress", { id: track.videoId, p: 0 });
-        try { src = await getAudio(track.videoId, "play", { asBlob: dlFirst, fresh: force ? 2 : false, onProgress: (p) => { if (my === seq) emit("loadprogress", { id: track.videoId, p }); } }); }   // force: a new YouTube session
+        try { src = await sources.active().audio(track.videoId, "play", { asBlob: dlFirst, fresh: force ? 2 : false, onProgress: (p) => { if (my === seq) emit("loadprogress", { id: track.videoId, p }); } }); }   // force: a new YouTube session
         finally { if (dlFirst) emit("loadprogress", { id: track.videoId, p: -1 }); }
         curMethod = dlFirst ? "download" : "stream";
       }
@@ -379,7 +380,7 @@ function recover() {
   const at = audio.currentTime, my = seq;
   (async () => {
     try {
-      const src = await getAudio(t.videoId, "play", { fresh: stage === "blob" ? 2 : 1, asBlob: stage === "blob" });   // 2 = also start a new YouTube session
+      const src = await sources.active().audio(t.videoId, "play", { fresh: stage === "blob" ? 2 : 1, asBlob: stage === "blob" });   // 2 = also start a new YouTube session
       if (my !== seq) { if (src.blob) URL.revokeObjectURL(src.url); return; }
       if (src.blob) { blobUrl = src.url; curMethod = "fallback"; }
       audio.src = src.url;

@@ -75,8 +75,14 @@ export const empty = (title, text) => `<div class="empty"><b>${esc(title)}</b><s
 let artAccent = null;
 export function applyAccent(fromArt) {
   if (fromArt) artAccent = fromArt;
-  const a = S.get().accent;
-  document.documentElement.style.setProperty("--accent", a === "art" ? artAccent || "#ff6a3d" : a);
+  const a = S.get().accent, c = a === "art" ? artAccent || "#ff6a3d" : a, st = document.documentElement.style;
+  st.setProperty("--accent", c);
+  st.setProperty("--on-accent", onColor(c));                // dark text on light accents, white on dark ones
+}
+function onColor(hex) {
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || ""); if (!m) return "#1a0a05";
+  const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.22 ? "#1a0a05" : "#ffffff";
 }
 
 /** The two layout styles (Settings → Appearance) are plain attributes on <body>; the CSS does the rest. */
@@ -84,6 +90,9 @@ export function applyStyle() {
   const s = S.get();
   document.body.dataset.nav = s.uiNav === "classic" ? "classic" : "glass";
   document.body.dataset.np = s.uiNp === "classic" ? "classic" : "blur";
+  const light = s.theme === "light" || (s.theme === "auto" && matchMedia("(prefers-color-scheme: light)").matches);
+  document.body.dataset.theme = light ? "light" : "dark";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#f6f4f0" : "#0c0c0f");
 }
 
 /** Pull a vivid colour out of the artwork (used when the accent is set to "Artwork"). */
