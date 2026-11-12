@@ -5,33 +5,18 @@
 # YT Music
 
 **A fast, private, ad-free YouTube Music player for your iPhone.**<br>
-Built as a native app that talks to YouTube Music straight from the phone. No server, no subscription, no PC needed.
+A native SwiftUI app that talks to YouTube Music straight from the phone. No server, no subscription, no PC needed.
 
-![Platform](https://img.shields.io/badge/platform-iOS%2015%2B-black?logo=apple&logoColor=white)
-![Wrapper](https://img.shields.io/badge/Capacitor-8-119EFF?logo=capacitor&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iOS%2016%2B-black?logo=apple&logoColor=white)
+![UI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 ![Engine](https://img.shields.io/badge/engine-youtubei.js-ff6a3d)
-![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
 ![Build](https://img.shields.io/badge/build-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)
 
-[Features](#features) · [Screenshots](#screenshots) · [How it works](#how-it-works) · [Get the app](#get-the-app) · [Project layout](#project-layout)
+[Features](#features) · [How it works](#how-it-works) · [Get the app](#get-the-app) · [Web version](#web-version-and-optional-server) · [Project layout](#project-layout)
 
 </div>
 
 <br>
-
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/home.jpg" width="180" alt="Home"><br><sub><b>Home</b><br>mood chips, listen again, picks for you</sub></td>
-    <td align="center"><img src="docs/screenshots/mix.jpg" width="180" alt="Mix"><br><sub><b>Mix</b><br>your own genres, found automatically</sub></td>
-    <td align="center"><img src="docs/screenshots/explore.jpg" width="180" alt="Explore"><br><sub><b>Explore</b><br>moods &amp; genres tiles</sub></td>
-    <td align="center"><img src="docs/screenshots/analytics.jpg" width="180" alt="Analytics"><br><sub><b>Analytics</b><br>your listening, on your phone</sub></td>
-    <td align="center"><img src="docs/screenshots/now-playing.jpg" width="180" alt="Now Playing"><br><sub><b>Now Playing</b><br>blur style</sub></td>
-  </tr>
-</table>
-
-<sub>Screenshots use invented songs and generated artwork.</sub>
 
 ## Features
 
@@ -39,69 +24,68 @@ Built as a native app that talks to YouTube Music straight from the phone. No se
 
 | | |
 |---|---|
-| **Ad-free, background playback** | Full-length audio streams straight from YouTube Music. Keeps playing with the screen locked, with lock-screen controls. |
-| **A queue that keeps going** | Every song starts a radio that keeps extending itself. **Dynamic queue** re-ranks what comes next from what you finish, skip and like. |
+| **Ad-free, background playback** | Full-length audio streams straight from YouTube Music. Keeps playing with the screen locked, with lock-screen controls and the cover on the lock screen. |
+| **Stations and a queue that keeps going** | Start a radio from any song, or just play: when the queue runs low, similar songs are added. **Dynamic queue** also draws on songs you like, and stops lining up an artist you keep skipping. Shuffle, repeat, and "not interested". |
 | **Synced lyrics** | Time-synced lyrics from YouTube Music, with LRCLIB as a fallback for songs that have none. Tap a line to jump to it. |
-| **Offline** | Save songs for offline listening, export any song to **Files** as `.m4a` with title, artist, album and cover written in, or cut a ringtone clip. |
-| **Playback you control** | Auto, Stream or Download-first playback, next-song prefetch, speed, sleep timer, AirPlay, optional **SponsorBlock** skipping for music videos. |
+| **Offline** | Save songs for offline listening (or turn on **Smart downloads** to save every song you like), and export any song to **Files** as `.m4a` with title, artist, album and cover written in. |
+| **Playback you control** | Auto, Stream or Download-first start modes with next-song prefetch, audio quality, speed, sleep timer, AirPlay, and optional **SponsorBlock** skipping for music videos. |
 
 ### Discover
 
 | | |
 |---|---|
-| **Home** | Mood chips (Relax, Sleep, Energize, Sad…), Listen again, Picked for you from your artists and languages, Because you played…, Quick picks, Trending. |
+| **Home** | Mood chips, Listen again, Picked for you from your artists and languages, Because you played…, Quick picks, Trending, and your own YouTube Music home when you sign in. Every section can be hidden. |
 | **Mix** | Add any genre, mood or style (*Lo-fi*, *Tamil hip-hop*, *90s Bollywood*…). Each one is searched for songs and playlists the moment you add it, and **Play mix** blends them all into one queue. |
-| **Explore** | New releases, charts (global or your country), top artists, and bold gradient **Moods &amp; genres** tiles. |
-| **Song versions** | Quick picks, Trending and radios show YouTube Music's *song* versions (album art, clean titles) instead of music-video thumbnails. Playing a video switches to its song version. |
+| **Explore** | New releases, charts (global or your country), top artists, and **Moods & genres** tiles, with album, playlist and artist pages. |
+| **Song versions** | Music videos play as their *song* version (clean audio, album art), like YouTube Music does. |
 | **Global by default** | Quick picks, New releases, Trending and Charts show worldwide music. One switch makes them follow your country instead. |
 
 ### Yours
 
 | | |
 |---|---|
-| **Analytics** | A Wrapped-style summary, listening time, top artists and songs, a streak, listening by day and by hour. Worked out on the device from your own play log. Nothing is uploaded. |
-| **Library** | Likes, your own playlists, saved albums and artists, history, and downloads. |
+| **Library** | Likes, your own playlists (rename, remove songs), saved albums and followed artists, history, and downloads. |
+| **Analytics** | A Wrapped-style summary you can share, listening time, top artists and songs, a streak, listening by day and by hour of the day. Worked out on the phone from your own play log. Nothing is uploaded. |
 | **Account (optional)** | Sign in with Google's TV device-code flow (you approve a short code at google.com/device; the app never sees your password) to show your YouTube Music home and liked songs. Experimental. |
-| **Search a list** | Paste several songs, check the best match for each line (tap to try the next one, or leave one out), then play them all, queue them, or save them as a playlist. |
-| **Import** | Build a playlist from a pasted list (`Song - Artist`) or a CSV exported from another app; each line is matched on YouTube Music. |
-| **Backup and restore** | One file with your likes, playlists, genres, analytics and settings. Restore it after reinstalling or on a new phone. |
+| **Search a list** | Paste several songs (or a CSV from another app), check the best match for each line, then play them all, queue them, or save them as a playlist. |
+| **Backup** | One file with your likes, playlists, saved items, genres, analytics and settings, in a format the web version understands too. |
 
 ### Look and feel
 
-- Two switchable styles: **Glass** (a floating, frosted tab bar and mini player) or **Classic**, and a **Blur** or **Classic** Now Playing screen.
-- **Dark, light or automatic** theme (Now Playing stays dark), eight accent colours, any custom colour, or an accent that follows the artwork.
-- **Show or hide Home sections** (mood chips, Listen again, Picked for you, Because you played, Quick picks, Trending).
-- Designed for iPhone first; the same UI becomes a sidebar-and-panel layout on a desktop browser.
+- **Dark, light or automatic** theme, eight accent colours, any custom colour, or an accent that follows the cover art.
+- Swipe a song right to like it and left to play it next. Swipe the mini player for next and previous.
+- Smooth, native scrolling and menus.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    UI["Interface<br/>(HTML / CSS / ES modules)"] --> Engine["On-device engine<br/>youtubei.js"]
-    Engine -->|"native HTTP"| YT[("YouTube Music")]
-    UI --> Store[("Local data<br/>likes, playlists, stats")]
-    UI -.optional.-> Server["Python server<br/>FastAPI + ytmusicapi"]
-    Server -.-> YT
+    UI["SwiftUI app<br/>(screens, player, library)"] --> Engine["Engine<br/>youtubei.js in a hidden web view"]
+    Engine -->|"IPv4 HTTPS client (Swift)"| YT[("YouTube Music")]
+    UI --> Player["AVPlayer<br/>stream or download"]
+    Player --> YT
+    UI --> Store[("Local data<br/>likes, playlists, stats, downloads")]
 ```
 
-- **The app** is a [Capacitor](https://capacitorjs.com) wrapper around a plain web UI (`frontend/`, no build step). It plays audio from a direct, device-bound stream address.
-- **The engine** (`frontend/js/engine`) answers the same endpoints as the optional server (search, home, charts, moods, albums, artists, playlists, radio, lyrics, streams), using the [`youtubei.js`](https://github.com/LuanRT/YouTube.js) client. Inside the app it uses its own native **IPv4-only HTTPS client** (a new connection per request, no cookies, no cache), with Capacitor's HTTP as a fallback.
-- **Everything personal stays on the phone**: likes, playlists, history, analytics and settings live in local storage and IndexedDB.
-- **The optional server** (`backend/`, FastAPI with `ytmusicapi` and `yt-dlp`) powers the website version and ringtone cutting. The app works without it.
+- **The app** is written in SwiftUI. It plays audio with `AVPlayer`, from a direct, device-bound stream address.
+- **The engine** is the same JavaScript used by the web version (`frontend/js/engine`, built on [`youtubei.js`](https://github.com/LuanRT/YouTube.js)). The app runs it in a hidden web view and asks it for search results, charts, lyrics and stream addresses. Its network requests go back to Swift, which uses its own **IPv4-only HTTPS client** (a new connection per request, no cookies, no cache), because YouTube treats IPv4 and IPv6 connections very differently.
+- **Everything personal stays on the phone**: likes, playlists, history, analytics and downloads live in the app's private storage.
 
 ## Get the app
 
 There is no Mac involved. A cloud Mac builds the app, and you sign it on your iPhone with your own certificate.
 
-**Quickest:** download `YTMusic-unsigned.ipa` from the [latest release](../../releases/latest) and sign it on your iPhone. Or build it yourself:
+**Quickest:** download `YTMusic-unsigned.ipa` from the [latest release](../../releases/latest). Or build it yourself:
 
 1. **Fork or push this repo to your own GitHub account** (private is fine).
-2. Open **Actions → Build iOS app → Run workflow**. In about a minute it produces the artifact **`YTMusic-unsigned.ipa`**.
-3. Download it, move it to your iPhone, and install it with the signing tool you use for your own apps, or import it into [LiveContainer](https://github.com/LiveContainer/LiveContainer) (no signing step, and the app doesn't count toward the 3-app limit). Then trust the developer under *Settings → General → VPN &amp; Device Management*.
+2. Open **Actions → Build iOS app → Run workflow**. In a few minutes it produces the artifact **`YTMusic-unsigned.ipa`**.
+3. Download it, move it to your iPhone, and either install it with the signing tool you use for your own apps, or import it into [LiveContainer](https://github.com/LiveContainer/LiveContainer) (no signing step, and the app doesn't count toward the 3-app limit). If you sign it yourself, trust the developer under *Settings → General → VPN & Device Management*.
 
-No signing secrets are needed in GitHub. If you would rather have the cloud build sign the IPA for you, see [`ios-app/README.md`](ios-app/README.md) for the three optional secrets.
+No secrets are needed in GitHub. To update, install the new IPA over the old one: your data is kept.
 
-> Apps signed with third-party or enterprise certificates can be revoked by whoever issued the certificate. If the app stops opening, build it again and sign with a fresh one. **Settings → Privacy → Back up and restore** keeps your data safe in the meantime.
+> Apps signed with third-party or enterprise certificates can be revoked by whoever issued the certificate. If the app stops opening, install it again with a fresh one. **Library → ··· → Back up to a file** keeps your data safe in the meantime.
+
+**Coming from the earlier web-wrapper version?** In that app use *Settings → Privacy → Back up and restore → Back up to a file*, then in the new app open *Library → ··· → Import web app backup*.
 
 ## Troubleshooting
 
@@ -110,26 +94,35 @@ Under **Settings → About** the app has two tools for the rare case that songs 
 - **Connection check** shows the phone's network addresses and, for each YouTube client, whether it can fetch audio.
 - **Reset connection** clears saved cookies and starts a fresh YouTube session.
 
+## Web version and optional server
+
+The same app also exists as a website (installable as a PWA) in `frontend/`, plain ES modules with no build step, and runs the same engine in the browser through an optional Python server in `backend/` (FastAPI with `ytmusicapi` and `yt-dlp`). The server is only needed for the website version and for cutting ringtone clips; the iPhone app works without it.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home.jpg" width="150" alt="Home"><br><sub><b>Home</b></sub></td>
+    <td align="center"><img src="docs/screenshots/mix.jpg" width="150" alt="Mix"><br><sub><b>Mix</b></sub></td>
+    <td align="center"><img src="docs/screenshots/explore.jpg" width="150" alt="Explore"><br><sub><b>Explore</b></sub></td>
+    <td align="center"><img src="docs/screenshots/analytics.jpg" width="150" alt="Analytics"><br><sub><b>Analytics</b></sub></td>
+    <td align="center"><img src="docs/screenshots/now-playing.jpg" width="150" alt="Now Playing"><br><sub><b>Now Playing</b></sub></td>
+  </tr>
+</table>
+
+<sub>Web version screenshots, with invented songs and generated artwork.</sub>
+
 ## Project layout
 
 ```text
-frontend/             the app UI (plain ES modules, no build step)
-  js/
-    app.js            boot, click routing, native bootstrap
-    views.js          Home, Explore, Search, Library, Settings
-    mix.js            Mix tab (custom genres)
-    stats.js          Analytics tab
-    now.js            mini player and Now Playing
-    player.js         playback, queue, dynamic queue, SponsorBlock
-    sheets.js         menus, playlists, Save to Files, ringtones
-    backup.js         backup / restore and playlist import
-    store.js          likes, playlists, stats, downloads (local data)
-    settings.js       preferences
-    engine/           the on-device YouTube Music engine
+ios/                  the iPhone app (SwiftUI)
+  Sources/            screens, player, library, engine bridge
+  Engine/             host page for the engine (the engine files are copied in at build time)
+  scripts/            copy-engine.sh
+  project.yml         XcodeGen project description
+frontend/             the website version and the engine
+  js/engine/          the YouTube Music engine (shared with the iPhone app)
   vendor/             youtubei.js (MIT)
-ios-app/              Capacitor project config and build scripts
-.github/workflows/    the cloud build for the iOS app
 backend/              optional FastAPI server (website version, ringtone clips)
+.github/workflows/    the cloud build for the iPhone app
 docs/screenshots/     images used in this README
 ```
 
@@ -161,13 +154,12 @@ Catalogue endpoints accept `loc=XX` (country). Set `APP_TOKEN` to require `?toke
 
 ## Tech
 
-Capacitor 8 · vanilla ES modules · an `<audio>` element with Media Session · `youtubei.js` · IndexedDB and local storage · FastAPI, `ytmusicapi`, `yt-dlp` (optional server) · GitHub Actions on a macOS runner.
+SwiftUI · AVPlayer · `youtubei.js` (run in WKWebView) · Network.framework · XcodeGen · GitHub Actions on a macOS runner. Website and server: vanilla ES modules, FastAPI, `ytmusicapi`, `yt-dlp` (optional).
 
 ## Notes
 
 - **Personal and educational use only.** This project is not affiliated with or endorsed by YouTube or Google. It relies on unofficial interfaces, which can break or be restricted at any time, and using it may be against YouTube's terms. You are responsible for how you use it. When something breaks, the fix is usually a small update to the engine.
 - Keep any server you run private (for example behind Tailscale) and protect it with `APP_TOKEN`.
-- Bump `VERSION` in `frontend/sw.js` when you change cached files and want the website version to refresh immediately.
 
 ## License
 
@@ -175,4 +167,4 @@ Capacitor 8 · vanilla ES modules · an `<audio>` element with Media Session · 
 
 ## Acknowledgements
 
-Inspired by [SimpMusic](https://github.com/maxrave-dev/SimpMusic). Built with [youtubei.js](https://github.com/LuanRT/YouTube.js), [ytmusicapi](https://github.com/sigma67/ytmusicapi), [yt-dlp](https://github.com/yt-dlp/yt-dlp), [Capacitor](https://capacitorjs.com), [LRCLIB](https://lrclib.net) for fallback lyrics, and [SponsorBlock](https://sponsor.ajay.app) for the optional skip feature.
+Inspired by [SimpMusic](https://github.com/maxrave-dev/SimpMusic). Built with [youtubei.js](https://github.com/LuanRT/YouTube.js), [ytmusicapi](https://github.com/sigma67/ytmusicapi), [yt-dlp](https://github.com/yt-dlp/yt-dlp), [XcodeGen](https://github.com/yonaskolb/XcodeGen), [LRCLIB](https://lrclib.net) for fallback lyrics, and [SponsorBlock](https://sponsor.ajay.app) for the optional skip feature.

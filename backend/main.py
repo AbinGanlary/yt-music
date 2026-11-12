@@ -688,12 +688,5 @@ class NoCacheStatic(StaticFiles):
         return r
 
 
-# Over-the-air install of the native app: /ota/ has the install page, manifest.plist and the .ipa (see ios-app/scripts/make_ota.py)
-OTA_DIR = Path(__file__).resolve().parent / "ota"
-OTA_DIR.mkdir(exist_ok=True)
-mimetypes.add_type("application/octet-stream", ".ipa")
-mimetypes.add_type("text/xml", ".plist")
-app.mount("/ota", NoCacheStatic(directory=OTA_DIR, html=True), name="ota")
-
 if FRONTEND.exists():
     app.mount("/", NoCacheStatic(directory=FRONTEND, html=True), name="frontend")

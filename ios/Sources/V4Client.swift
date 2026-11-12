@@ -1,11 +1,11 @@
-// ---------------------------------------------------------------------------------------------------------------
-// Ipv4Http: a tiny HTTPS client used by the on-device YouTube engine.
-//   - always IPv4 (iOS otherwise picks IPv4 or IPv6 per connection, and YouTube treats the two very differently)
-//   - a brand-new connection for every request, no cookies, no cache, no HTTP/2 reuse
-// It is appended to AppDelegate.swift by scripts/patch_ios.py and registered through capacitor.config.json.
-// ---------------------------------------------------------------------------------------------------------------
+import Foundation
+import Network
 
-private enum V4Error: LocalizedError {
+// The app's IPv4-only HTTPS client, copied from the web app's native shell (ios-app/native/Ipv4Http.swift).
+// iOS picks IPv4 or IPv6 per connection, and YouTube hands out stream addresses that only work from the address
+// family they were issued to, so every request goes over IPv4 on a fresh connection.
+
+enum V4Error: LocalizedError {
     case badURL, timeout, truncated
 
     var errorDescription: String? {
@@ -17,13 +17,13 @@ private enum V4Error: LocalizedError {
     }
 }
 
-private struct V4Response {
+struct V4Response {
     let status: Int
     let headers: [String: String]
     let body: Data
 }
 
-private final class V4Request: @unchecked Sendable {
+final class V4Request: @unchecked Sendable {
     private let url: URL
     private let method: String
     private let headers: [String: String]
@@ -159,33 +159,13 @@ private final class V4Request: @unchecked Sendable {
     }
 }
 
-@objc(Ipv4HttpPlugin)
-public class Ipv4HttpPlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier = "Ipv4HttpPlugin"
-    public let jsName = "Ipv4Http"
-    public let pluginMethods: [CAPPluginMethod] = [CAPPluginMethod(name: "request", returnType: CAPPluginReturnPromise)]
 
-    /// { url, method, headers, body (text), binary (reply as base64) } -> { status, headers, data }
-    @objc func request(_ call: CAPPluginCall) {
-        guard let s = call.getString("url"), let url = URL(string: s) else { call.reject("bad url"); return }
-        let method = (call.getString("method") ?? "GET").uppercased()
-        var headers: [String: String] = [:]
-        if let h = call.getObject("headers") { for (k, v) in h { if let sv = v as? String { headers[k] = sv } } }
-        let body = call.getString("body").map { Data($0.utf8) }
-        let binary = call.getBool("binary") ?? false
+func v4Request(url: URL, method: String = "GET", headers: [String: String] = [:], body: Data? = nil, timeout: TimeInterval = 30) async throws -> V4Response {
+    try await withCheckedThrowingContinuation { cont in
         let req = V4Request(url: url, method: method, headers: headers, body: body)
-        req.start(timeout: 30) { result in
+        req.start(timeout: timeout) { result in
             _ = req                                              // keeps the request alive until it finishes
-            switch result {
-            case .success(let r):
-                call.resolve([
-                    "status": r.status,
-                    "headers": r.headers,
-                    "data": binary ? r.body.base64EncodedString() : String(decoding: r.body, as: UTF8.self),
-                ])
-            case .failure(let e):
-                call.reject(e.localizedDescription)
-            }
+            cont.resume(with: result)
         }
     }
 }
