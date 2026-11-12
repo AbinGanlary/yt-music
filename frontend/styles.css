@@ -534,3 +534,13 @@ body[data-theme=light] .np .ib:active{background:#ffffff26}
 .sl-list{max-height:46vh;overflow:auto;margin:0 -4px}
 .sl-off{opacity:.4}.sl-miss{opacity:.65}
 .sl-alt{height:32px;padding:0 10px;font-size:12px}
+
+/* ---------- settings: list of sections ---------- */
+.set-index{padding:4px var(--gx) 24px;display:flex;flex-direction:column;gap:8px}
+.set-sec{display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:14px;align-items:center;width:100%;padding:12px 14px 12px 12px;border-radius:16px;background:var(--surface);min-height:68px}
+.set-sec:active{background:var(--surface2)}
+.set-sec .si{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 18%,var(--surface2));color:var(--accent)}
+.set-sec .t b{display:block;font-size:16px;font-weight:700}
+.set-sec .t span{display:block;font-size:13px;color:var(--muted);line-height:1.35;margin-top:2px}
+.set-sec .chev{color:var(--faint);transform:rotate(180deg)}
+@media (min-width:900px){.set-index{max-width:760px}}

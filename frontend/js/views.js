@@ -392,7 +392,7 @@ const INTROS = [
   "Make recommendations and charts fit you.", "Optional: connect your own YouTube Music account.", "Control what is saved on this device.",
   "Make the player look the way you like.", "App information and updates.",
 ];
-let setSec = 0;
+const SEC_ICONS = ["play", "download", "radio", "artist", "clock", "album", "gear"];
 let curDefs = {};
 
 const PLAYBACK = [["auto", "Auto"], ["stream", "Stream"], ["download", "Download first"]];
@@ -483,8 +483,14 @@ function displayInfo() {
   const app = document.querySelector("#app")?.getBoundingClientRect();
   return `window ${innerWidth}×${innerHeight}${fixed ? " → " + fixed : ""} · visual ${vv ? Math.round(vv.width) + "×" + Math.round(vv.height) + " @" + Math.round(vv.offsetTop) : "n/a"} · screen ${screen.width}×${screen.height} · safe ${top}/${bottom} · app ${app ? Math.round(app.top) + "–" + Math.round(app.bottom) : "n/a"} · mode ${navigator.standalone ? "home-screen" : "browser"}`;
 }
-register("settings", () => {
+register("settings", (r) => {
   const defs = settingsDefs(); curDefs = {};
+  const setSec = r?.sec;
+  if (!(setSec >= 0 && setSec < SECTIONS.length)) {            // the list of sections: big rows you can tap, nothing to scroll sideways
+    page(hdrBack("Settings"), `<div class="set-index" role="list">${SECTIONS.map((n, i) => `<button class="set-sec" role="listitem" data-act="set-sec" data-i="${i}">
+      <span class="si">${ic(SEC_ICONS[i], 22)}</span><span class="t"><b>${n}</b><span>${INTROS[i]}</span></span><span class="chev">${ic("back", 18, { sw: 2 })}</span></button>`).join("")}</div>`);
+    return;
+  }
   const items = defs[setSec].map((x) => { curDefs[x.id] = x; return x; });
   const row = (x) => {
     let ctl = "";
@@ -497,12 +503,11 @@ register("settings", () => {
     else if (x.k === "range") ctl = `<div class="fit"><input type="range" class="rg" id="fit-range" min="0" max="100" step="1" value="${x.v}" style="--p:${x.v}%" aria-label="${esc(x.t)}"><span class="set-val" id="fit-val">${x.v ? "+" + x.v + " px" : "Auto"}</span></div>`;
     return `<div class="set-row"><div class="t"><b>${esc(x.t)}</b><span>${esc(x.d)}</span></div>${ctl}</div>`;
   };
-  page(hdrBack("Settings"), `
-    <div class="chips-row tight hs" role="tablist" aria-label="Settings sections">${SECTIONS.map((n, i) => `<button class="chip${setSec === i ? " on" : ""}" role="tab" aria-selected="${setSec === i}" data-act="set-sec" data-i="${i}">${n}</button>`).join("")}</div>
+  page(hdrBack(SECTIONS[setSec]), `
     <p class="set-intro">${INTROS[setSec]}</p>
     <div class="set-list">${items.map(row).join("")}</div>`);
 });
-actions["set-sec"] = (el) => { setSec = Number(el.dataset.i); rerender(); };
+actions["set-sec"] = (el) => navigate({ name: "settings", sec: Number(el.dataset.i) });
 actions["set-item"] = (el) => {
   const x = curDefs[el.dataset.id]; if (!x?.fn) return;
   x.fn(el.dataset.opt !== undefined ? Number(el.dataset.opt) : undefined);
