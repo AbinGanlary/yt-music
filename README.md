@@ -95,7 +95,7 @@ There is no Mac involved. A cloud Mac builds the app, and you sign it on your iP
 
 1. **Fork or push this repo to your own GitHub account** (private is fine).
 2. Open **Actions → Build iOS app → Run workflow**. In about a minute it produces the artifact **`YTMusic-unsigned.ipa`**.
-3. Download it, move it to your iPhone, and install it with the signing tool you use for your own apps. Then trust the developer under *Settings → General → VPN &amp; Device Management*.
+3. Download it, move it to your iPhone, and install it with the signing tool you use for your own apps, or import it into [LiveContainer](https://github.com/LiveContainer/LiveContainer) (no signing step, and the app doesn't count toward the 3-app limit). Then trust the developer under *Settings → General → VPN &amp; Device Management*.
 
 No signing secrets are needed in GitHub. If you would rather have the cloud build sign the IPA for you, see [`ios-app/README.md`](ios-app/README.md) for the three optional secrets.
 

@@ -58,11 +58,11 @@ def patch_appdelegate():
     print("AppDelegate.swift: audio session set to .playback")
 
 
-PLUGINS = [("Ipv4HttpPlugin", "Ipv4Http.swift"), ("SignerPlugin", "Signer.swift")]
+PLUGINS = [("Ipv4HttpPlugin", "Ipv4Http.swift")]
 
 
 def patch_native_http():
-    """Adds the native plugins (IPv4-only HTTPS client, certificate store) to AppDelegate.swift and registers them for the bridge."""
+    """Adds the native plugins (IPv4-only HTTPS client) to AppDelegate.swift and registers them for the bridge."""
     p = APP / "AppDelegate.swift"
     s = p.read_text(encoding="utf-8")
     for mod in ("Foundation", "Network", "Security"):

@@ -1,6 +1,6 @@
 // Update check. Asks GitHub for the latest release and says when a newer build exists.
-// An iPhone app can't replace itself (and has no access to the signing certificate it was installed with), so "Download" opens the
-// new .ipa; you then sign and install it with your own signing tool, over this app, and your data is kept.
+// An iPhone app can't replace itself, so "Download" opens the new .ipa; you import or install it over this app with your own tool
+// (for example LiveContainer), and your data is kept.
 import { APP_VERSION, APP_NAME, toast, esc } from "./ui.js";
 import * as store from "./store.js";
 import { openSheet } from "./sheets.js";
@@ -48,7 +48,7 @@ export function openUpdate() {
     <ul class="yt-steps">${notes}</ul>
     ${u.ipa ? `<a class="btn wide" href="${esc(u.ipa)}" target="_blank" rel="noopener">Download update (.ipa)</a>` : ""}
     <a class="btn ghost wide" style="margin-top:10px" href="${esc(u.page)}" target="_blank" rel="noopener">See what's new on GitHub</a>
-    <p class="fine" style="margin-top:12px">After it downloads, sign and install it with your signing tool, over this app. Your songs, likes and settings are kept. The app can't install itself: iOS only allows that through the certificate you sign with.</p></div>`);
+    <p class="fine" style="margin-top:12px">After it downloads, import it into LiveContainer (or install it with your signing tool) over this app. Your songs, likes and settings are kept. Use Backup first if you remove the old copy.</p></div>`);
 }
 
 actions["update-open"] = () => openUpdate();

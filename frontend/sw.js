@@ -1,11 +1,11 @@
 // Service worker: app shell works offline; API answers fall back to the last good copy; art is cached.
 // Audio (/stream) is never cached here: saved songs live in IndexedDB.
-const VERSION = "v1.0.3";
+const VERSION = "v1.0.4";
 const SHELL = `grooves-shell-${VERSION}`, DATA = `grooves-data-${VERSION}`, IMG = `grooves-img-${VERSION}`;
 const SHELL_FILES = [
   "/", "/styles.css", "/manifest.webmanifest",
   "/js/app.js", "/js/api.js", "/js/store.js", "/js/player.js", "/js/settings.js",
-  "/js/ui.js", "/js/nav.js", "/js/views.js", "/js/sheets.js", "/js/now.js", "/js/mix.js", "/js/stats.js", "/js/backup.js", "/js/account.js", "/js/gestures.js", "/js/update.js", "/js/signing.js", "/js/icons.js",
+  "/js/ui.js", "/js/nav.js", "/js/views.js", "/js/sheets.js", "/js/now.js", "/js/mix.js", "/js/stats.js", "/js/backup.js", "/js/account.js", "/js/gestures.js", "/js/update.js", "/js/icons.js",
   "/fonts/bricolage.woff2", "/fonts/dmsans.woff2",
   "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png",
 ];

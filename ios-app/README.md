@@ -20,7 +20,7 @@ The workflow also accepts a **Bundle ID** input (default `com.ytmusic.app`).
 ## Install
 
 The build is unsigned, so you sign it with your own certificate on the iPhone, using the signing tool you normally use
-for your own apps. Then trust the developer: *Settings → General → VPN & Device Management → (developer) → Trust*.
+for your own apps. Or import the IPA into LiveContainer, which runs it without signing. Then trust the developer: *Settings → General → VPN & Device Management → (developer) → Trust*.
 
 Open the app. There is nothing to set up: it searches and plays on its own.
 

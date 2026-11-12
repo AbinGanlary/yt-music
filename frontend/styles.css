@@ -503,8 +503,3 @@ body[data-nav=glass] .tabs button.on{color:var(--ink)}
 .mini.loading:not(:has(#mini-prog[style*="%"])) .mini-prog i{animation:miniload 1.1s ease-in-out infinite}
 @keyframes miniload{50%{opacity:.35}}
 
-/* ---------- signing sheet ---------- */
-.sg-h{margin:16px 0 6px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.sg-list{list-style:none;margin:14px 0 8px;padding:0}
-.sg-list li{display:flex;gap:10px;padding:5px 0;font-size:14px;color:var(--soft)}
-.sg-ok{color:#5fd68a;font-weight:700}.sg-bad{color:#ff6b6b;font-weight:700}.sg-na{color:var(--muted)}
