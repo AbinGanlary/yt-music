@@ -1,18 +1,14 @@
 # secrets and local-only files
-backend/token.txt
-backend/.venv/
-backend/*.log
-backend/*.err
-backend/__pycache__/
 *.p12
 *.pem
 *.cer
 *.mobileprovision
 # generated
-ios/Engine/js/
-ios/Engine/vendor/
 ios/YTMusic.xcodeproj/
 ios/Info.plist
 .claude/
 __pycache__/
+# leftovers of the removed website and server, and the old Capacitor project
+frontend/
+backend/
 ios-app/

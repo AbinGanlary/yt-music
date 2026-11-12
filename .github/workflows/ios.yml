@@ -16,9 +16,6 @@ jobs:
       - name: Show toolchain
         run: xcodebuild -version
 
-      - name: Copy the engine into the app
-        run: sh ios/scripts/copy-engine.sh
-
       - name: Generate the Xcode project
         working-directory: ios
         run: |

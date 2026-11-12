@@ -1,6 +1,6 @@
 # The iPhone app
 
-A SwiftUI app (iOS 16+). The YouTube engine is the same JavaScript the web version uses; the app runs it in a hidden web view and talks to it through a small bridge.
+A SwiftUI app (iOS 16+). The YouTube engine is JavaScript (`Engine/`); the app runs it in a hidden web view and talks to it through a small bridge.
 
 ## Build
 
@@ -9,7 +9,6 @@ Builds run on GitHub's Macs: **Actions → Build iOS app → Run workflow**. The
 Locally you need a Mac with Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen):
 
 ```sh
-sh scripts/copy-engine.sh     # copies the engine from ../frontend into Engine/
 xcodegen generate             # makes YTMusic.xcodeproj from project.yml
 open YTMusic.xcodeproj
 ```
@@ -26,9 +25,10 @@ open YTMusic.xcodeproj
 | `Sources/Downloads.swift` | Songs saved for offline listening |
 | `Sources/M4ATagger.swift` | Writes title, artist, album and cover into exported `.m4a` files |
 | `Sources/*View.swift` | The screens |
-| `Engine/host.html`, `host.js` | The page the engine runs in. The engine files themselves are copied in at build time. |
+| `Engine/host.html`, `host.js` | The page the engine runs in |
+| `Engine/js/engine/` | The engine: search, home, charts, albums, artists, lyrics, radio and stream addresses |
+| `Engine/vendor/` | `youtubei.js` (MIT) |
 
 ## Notes
 
 - The bundle id is `com.ytmusic.swiftui`. Installing a new build over an old one keeps your data.
-- The engine files live in `../frontend/js/engine` and `../frontend/vendor`, shared with the web version, so a fix to the engine reaches both.

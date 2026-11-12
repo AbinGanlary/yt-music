@@ -1,5 +1,5 @@
 /* Design mockups of the iPhone app, for the README. Invented songs, generated artwork. */
-@font-face { font-family: "DM Sans"; src: url(../../frontend/fonts/dmsans.woff2) format("woff2"); font-weight: 100 1000; }
+@font-face { font-family: "DM Sans"; src: url(dmsans.woff2) format("woff2"); font-weight: 100 1000; }
 :root {
   --bg: #0c0c0f; --surface: #1d1d23; --surface2: #26262d; --ink: #f4f2ee; --muted: rgba(255,255,255,.6); --faint: rgba(255,255,255,.34);
   --accent: #ff6a3d;
