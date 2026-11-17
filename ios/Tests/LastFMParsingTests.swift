@@ -19,7 +19,7 @@ struct LastFMParsingTests {
     }
 
     @Test func albumsAreParsedFromTagAndArtistAnswers() {
-        let tag = #"{"albums":{"album":[{"name":"Night Roads","artist":{"name":"Neon Harbor"},"image":[{"#text":"https://img.example/n.png","size":"extralarge"}]},{"name":"(null)","artist":{"name":"X"}}]}}"#
+        let tag = ##"{"albums":{"album":[{"name":"Night Roads","artist":{"name":"Neon Harbor"},"image":[{"#text":"https://img.example/n.png","size":"extralarge"}]},{"name":"(null)","artist":{"name":"X"}}]}}"##
         let a = LastFM.parseAlbums(data(tag))
         #expect(a.count == 1)
         #expect(a[0].title == "Night Roads" && a[0].artist == "Neon Harbor")
@@ -59,7 +59,7 @@ struct LastFMParsingTests {
     }
 
     @Test func theCoverOfASongsAlbumIsRead() {
-        let json = #"{"track":{"name":"X","album":{"title":"A","image":[{"#text":"https://img.example/t.png","size":"large"}]}}}"#
+        let json = ##"{"track":{"name":"X","album":{"title":"A","image":[{"#text":"https://img.example/t.png","size":"large"}]}}}"##
         #expect(LastFM.parseTrackArt(data(json))?.absoluteString == "https://img.example/t.png")
         #expect(LastFM.parseTrackArt(data(#"{"track":{"name":"X"}}"#)) == nil)
     }
