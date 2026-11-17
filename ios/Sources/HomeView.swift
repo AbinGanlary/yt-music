@@ -53,9 +53,6 @@ struct SongList: View {
                 }
                 .contextMenu {
                     Button { player.startRadio(t) } label: { Label("Start radio", systemImage: "dot.radiowaves.left.and.right") }
-                    if LastFM.isOn {
-                        Button { player.startRadio(t, lastFM: true) } label: { Label("Start Last.fm radio", systemImage: "antenna.radiowaves.left.and.right") }
-                    }
                     Button { player.playNext(t) } label: { Label("Play next", systemImage: "text.line.first.and.arrowtriangle.forward") }
                     Button { player.addToQueue(t) } label: { Label("Add to queue", systemImage: "text.append") }
                     Menu {
@@ -103,9 +100,6 @@ struct TrackShelf: View {
                             .onTapGesture { tap(); player.play(t, in: tracks) }
                             .contextMenu {
                                 Button { player.startRadio(t) } label: { Label("Start radio", systemImage: "dot.radiowaves.left.and.right") }
-                                if LastFM.isOn {
-                                    Button { player.startRadio(t, lastFM: true) } label: { Label("Start Last.fm radio", systemImage: "antenna.radiowaves.left.and.right") }
-                                }
                                 Button { player.playNext(t) } label: { Label("Play next", systemImage: "text.line.first.and.arrowtriangle.forward") }
                                 Button { player.toggleLike(t) } label: { Label("Like", systemImage: "heart") }
                             }
@@ -138,7 +132,9 @@ struct HomeView: View {
     @State private var quick: [Track] = []
     @State private var noResults = false
     @State private var trending: [Track] = []
-    @State private var lastfm: [Track] = []
+    @AppStorage("musicSource") private var musicSource = "youtube"        // "youtube" or "lastfm" (Settings)
+    @AppStorage("lastfmKey") private var lastfmKey = ""
+    @State private var lfmTags: [String] = []
     @State private var because: [Track] = []
     @State private var becauseTitle = ""
     @State private var results: [Track] = []
@@ -149,6 +145,10 @@ struct HomeView: View {
     @State private var error: String?
     private let moods = ["All", "Relax", "Sleep", "Energize", "Sad", "Romance", "Focus", "Party"]
 
+    private var lfm: Bool { musicSource == "lastfm" && !lastfmKey.trimmingCharacters(in: .whitespaces).isEmpty }
+    /// The chips under the search box: moods, or Last.fm's most used tags when Last.fm is the source.
+    private var moodNames: [String] { lfm ? ["All"] + lfmTags.prefix(7).map { $0.prefix(1).uppercased() + $0.dropFirst() } : moods }
+
     private func on(_ id: String) -> Bool { !hidden.split(separator: ",").contains(Substring(id)) }
     private var recent: [String] { recentStore.split(separator: "|").map(String.init) }
 
@@ -158,13 +158,15 @@ struct HomeView: View {
                 if on("moods") && mood != -1 {                  // not while looking at search results
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(moods.indices, id: \.self) { i in
+                            ForEach(moodNames.indices, id: \.self) { i in
                                 Button {
                                     tap()
                                     withAnimation(.easeOut(duration: 0.2)) { mood = i }
-                                    if i == 0 { results = []; heading = "Quick picks" } else { run("\(moods[i]) songs", heading: moods[i]) }
+                                    if i == 0 { results = []; noResults = false; heading = "Quick picks" }
+                                    else if lfm { runTag(lfmTags[i - 1]) }
+                                    else { run("\(moods[i]) songs", heading: moods[i]) }
                                 } label: {
-                                    Text(moods[i]).font(.subheadline.weight(.semibold))
+                                    Text(moodNames[i]).font(.subheadline.weight(.semibold))
                                         .padding(.horizontal, 14).padding(.vertical, 8)
                                         .background(mood == i ? Color.primary : Theme.surface, in: Capsule())
                                         .overlay(Capsule().strokeBorder(Color.primary.opacity(mood == i ? 0 : 0.1)))
@@ -242,8 +244,7 @@ struct HomeView: View {
                     SongList(tracks: results.isEmpty ? quick : results)
                 }
 
-                if results.isEmpty && on("lastfm") { TrackShelf(title: "Last.fm top tracks", subtitle: "From Last.fm", tracks: lastfm) }
-                if results.isEmpty && on("trend") { TrackShelf(title: "Trending", tracks: trending) }
+                if results.isEmpty && on("trend") && !lfm { TrackShelf(title: "Trending", tracks: trending) }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -273,7 +274,14 @@ struct HomeView: View {
             }
             .onSubmit(of: .search) { mood = -1; remember(query); run(query, heading: "“\(query)”") }
             .task(id: query) { await loadSuggestions() }
-            .task { await loadAll() }
+            .task(id: musicSource + "|" + lastfmKey) {                  // choosing a different music source in Settings reloads Home
+                results = []
+                noResults = false
+                mood = 0
+                heading = "Quick picks"
+                quick = []
+                await loadAll()
+            }
             .refreshable { await loadAll() }
             .onChange(of: query) { _, q in                                 // clearing the search box (or cancelling it) goes back to Home
                 if q.trimmingCharacters(in: .whitespaces).isEmpty && mood == -1 {
@@ -301,7 +309,57 @@ struct HomeView: View {
         if let s: [String] = try? await engine.get("/api/suggest?q=\(EngineHost.enc(q))") { suggestions = Array(s.prefix(8)) }
     }
 
+    /// Home with Last.fm as the source: the chart as Quick picks, similar songs, and your picks from Last.fm's artist and tag lists.
+    private func loadLastFM() async {
+        error = nil
+        ytShelves = []
+        trending = []
+        do {
+            let loc = EngineHost.loc()
+            let list = try await (loc.isEmpty ? LastFM.chart(limit: 40) : LastFM.country(loc, limit: 40))
+            quick = await SongMatcher.shared.resolveAll(list, max: 20)
+        } catch { self.error = error.localizedDescription }
+        if lfmTags.isEmpty { lfmTags = (try? await LastFM.topTags(limit: 8)) ?? [] }
+
+        if on("because"), let last = player.lib.history.first, last.id.count >= 11 {
+            becauseTitle = last.title
+            let artist = last.artist.components(separatedBy: ", ").first ?? last.artist
+            if let list = try? await LastFM.similar(artist: artist, track: last.title) {
+                because = Array((await SongMatcher.shared.resolveAll(list, max: 14)).filter { $0.id != last.id })
+            }
+        }
+        let artists = Taste.artists(tasteArtists), langs = Taste.langs(tasteLangs)
+        if on("mix"), !artists.isEmpty || !langs.isEmpty {
+            pickedLabel = (artists.prefix(2).map { $0.name } + langs.prefix(1)).joined(separator: ", ")
+            var out: [Track] = []
+            for a in artists.prefix(3) {
+                if let list = try? await LastFM.artistTopTracks(a.name, limit: 6) { out += await SongMatcher.shared.resolveAll(list, max: 5) }
+            }
+            for l in langs.prefix(2) {
+                if let list = try? await LastFM.tag(l.lowercased(), limit: 8) { out += await SongMatcher.shared.resolveAll(list, max: 6) }
+            }
+            var seen = Set<String>()
+            picked = Array(out.filter { seen.insert($0.id).inserted }.shuffled().prefix(16))
+        } else { picked = [] }
+    }
+
+    private func runTag(_ t: String) {
+        busy = true
+        error = nil
+        noResults = false
+        Task {
+            do {
+                let list = try await LastFM.tag(t, limit: 40)
+                results = await SongMatcher.shared.resolveAll(list, max: 30)
+                heading = t.prefix(1).uppercased() + t.dropFirst()
+                noResults = results.isEmpty
+            } catch { self.error = error.localizedDescription }
+            busy = false
+        }
+    }
+
     private func loadAll() async {
+        if lfm { await loadLastFM(); return }
         do {
             let t = try await engine.quickPicks()
             if !t.isEmpty { quick = t }
@@ -310,12 +368,6 @@ struct HomeView: View {
         if signedIn, let shelves: [YTShelf] = try? await engine.get("/api/ythome") { ytShelves = shelves } else if !signedIn { ytShelves = [] }
         let loc = EngineHost.loc()
         if on("trend"), let raw: [RawTrack] = try? await engine.get("/api/trending?country=\(loc.isEmpty ? "ZZ" : loc)") { trending = raw.compactMap { Track($0) } }
-        if on("lastfm"), LastFM.isOn {
-            let loc = EngineHost.loc()
-            if let list = try? await (loc.isEmpty ? LastFM.chart(limit: 30) : LastFM.country(loc, limit: 30)) {
-                lastfm = await SongMatcher.shared.resolveAll(list, max: 14)
-            }
-        } else { lastfm = [] }
         let artists = Taste.artists(tasteArtists), langs = Taste.langs(tasteLangs)
         if on("mix"), !artists.isEmpty || !langs.isEmpty {
             let ids = artists.prefix(6).map { $0.id }.joined(separator: ",")

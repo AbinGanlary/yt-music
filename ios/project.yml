@@ -25,7 +25,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: "YT Music"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        MARKETING_VERSION: "2.2.0"
+        MARKETING_VERSION: "2.3.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         SWIFT_STRICT_CONCURRENCY: complete

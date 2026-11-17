@@ -139,7 +139,7 @@ final class PlayerModel {
     }
 
     /// A station: the song plays and similar songs keep coming. If it is already playing, it carries on and only what follows changes.
-    func startRadio(_ t: Track, lastFM: Bool = false) {
+    func startRadio(_ t: Track) {
         orderBackup = []
         if t.id == current.id, player.currentItem != nil {
             queue = [t]
@@ -150,8 +150,8 @@ final class PlayerModel {
             index = 0
             start()
         }
-        flash(lastFM ? "Starting Last.fm radio" : "Starting radio")
-        Task { await topUp(force: true, plain: true, lastFM: lastFM ? true : nil) }
+        flash(LastFM.active ? "Starting Last.fm radio" : "Starting radio")
+        Task { await topUp(force: true, plain: true) }
     }
 
     func toggleShuffle() {
@@ -670,8 +670,8 @@ final class PlayerModel {
             seeds += Array(pool.shuffled().prefix(2))
         }
         let eng = engine
-        // the radio source is YouTube Music, or Last.fm's similar songs (Settings → Last.fm), unless this call says which
-        let useLastFM = lastFM ?? (LastFM.isOn && UserDefaults.standard.string(forKey: "radioSource") == "lastfm")
+        // with Last.fm chosen as the music source (Settings), radio uses Last.fm's similar songs
+        let useLastFM = lastFM ?? LastFM.active
         let lists = await withTaskGroup(of: (Int, [Track]).self) { group -> [[Track]] in
             for (i, s) in seeds.enumerated() { group.addTask { (i, await PlayerModel.songsLike(s, lastFM: useLastFM, engine: eng)) } }
             var out = [[Track]](repeating: [], count: seeds.count)

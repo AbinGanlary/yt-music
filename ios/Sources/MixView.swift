@@ -2,12 +2,19 @@ import SwiftUI
 
 private let presets = ["Lo-fi", "Tamil hip-hop", "90s Bollywood", "K-pop", "Indie", "Rock", "Jazz", "EDM", "Classical", "Devotional", "Punjabi", "Telugu hits", "Workout", "Acoustic", "Focus"]
 
+/// The songs (and, from YouTube Music, playlists) found for one genre.
+struct MixGenre {
+    var songs: [Track]
+    var playlists: [Coll]
+}
+
 /// Mix tab: genres, moods and styles you add. Each one is searched for songs and playlists, and "Play mix" blends them.
 struct MixView: View {
     @Environment(EngineHost.self) private var engine
     @Environment(PlayerModel.self) private var player
     @AppStorage("mixGenres") private var stored = ""
-    @State private var loaded: [String: GenreData] = [:]
+    @State private var loaded: [String: MixGenre] = [:]
+    @AppStorage("musicSource") private var musicSource = "youtube"
     @State private var selected = "All"
     @State private var adding = false
     @State private var newName = ""
@@ -48,7 +55,8 @@ struct MixView: View {
                 Button("Cancel", role: .cancel) { newName = "" }
             }
             .navigationDestination(for: Coll.self) { CollectionScreen(coll: $0) }
-            .task(id: stored) { await loadMissing() }
+            .task(id: stored + "|" + musicSource + "|" + LastFM.key) { await loadMissing() }
+            .onChange(of: musicSource) { _, _ in loaded = [:] }
         }
     }
 
@@ -97,7 +105,7 @@ struct MixView: View {
                     }
                     .padding(.horizontal, 20)
                     if let d = loaded[g] {
-                        let tracks = d.songs.compactMap { Track($0) }
+                        let tracks = d.songs
                         VStack(spacing: 0) {
                             ForEach(tracks.prefix(8)) { t in
                                 TrackRow(track: t, playing: player.current == t && player.isPlaying)
@@ -116,13 +124,19 @@ struct MixView: View {
 
     private func loadMissing() async {
         for g in genres where loaded[g] == nil {
-            if let d: GenreData = try? await engine.get("/api/genre?q=\(EngineHost.enc(g))") { loaded[g] = d }
+            if LastFM.active {                                           // Last.fm as the source: the genre's top tracks
+                if let list = try? await LastFM.tag(g.lowercased(), limit: 30) {
+                    loaded[g] = MixGenre(songs: await SongMatcher.shared.resolveAll(list, max: 20), playlists: [])
+                }
+            } else if let d: GenreData = try? await engine.get("/api/genre?q=\(EngineHost.enc(g))") {
+                loaded[g] = MixGenre(songs: d.songs.compactMap { Track($0) }, playlists: d.playlists)
+            }
         }
     }
 
     /// Songs from every loaded genre, interleaved; the first few stay in order, the rest are shuffled.
     private func playMix() {
-        let lists = genres.filter { selected == "All" || selected == $0 }.compactMap { loaded[$0] }.map { $0.songs.compactMap { Track($0) } }
+        let lists = genres.filter { selected == "All" || selected == $0 }.compactMap { loaded[$0] }.map { $0.songs }
         var seen = Set<String>()
         var out: [Track] = []
         for i in 0..<(lists.map { $0.count }.max() ?? 0) {

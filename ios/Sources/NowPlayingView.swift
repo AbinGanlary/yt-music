@@ -101,14 +101,7 @@ struct NowPlayingView: View {
                         Button("End of this song") { player.setSleep(minutes: 0) }
                     } label: { Label(player.sleepLabel ?? "Sleep", systemImage: "moon.zzz") }
 
-                    if LastFM.isOn {
-                        Menu {
-                            Button { tap(); player.startRadio(t) } label: { Label("YouTube Music radio", systemImage: "dot.radiowaves.left.and.right") }
-                            Button { tap(); player.startRadio(t, lastFM: true) } label: { Label("Last.fm radio", systemImage: "antenna.radiowaves.left.and.right") }
-                        } label: { Label("Radio", systemImage: "dot.radiowaves.left.and.right") }
-                    } else {
-                        Button { tap(); player.startRadio(t) } label: { Label("Radio", systemImage: "dot.radiowaves.left.and.right") }
-                    }
+                    Button { tap(); player.startRadio(t) } label: { Label("Radio", systemImage: "dot.radiowaves.left.and.right") }
                     Button { player.saveToFiles(t) } label: { Label("Save", systemImage: "square.and.arrow.up") }
                     AirPlayButton().frame(width: 30, height: 30)
                 }

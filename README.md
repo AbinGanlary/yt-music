@@ -57,7 +57,7 @@ A native SwiftUI app that talks to YouTube Music straight from the phone. No ser
 | **Mix** | Add any genre, mood or style (*Lo-fi*, *Tamil hip-hop*, *90s Bollywood*…). Each one is searched for songs and playlists the moment you add it, and **Play mix** blends them all into one queue. |
 | **Explore** | New releases, charts (global or your country), top artists, and **Moods & genres** tiles, with album, playlist and artist pages. |
 | **Song versions** | Music videos play as their *song* version (clean audio, album art), like YouTube Music does. |
-| **Last.fm (optional)** | Add a free Last.fm API key in Settings to get Last.fm top tracks and popular tags in Explore, a Last.fm shelf on Home, and a **Last.fm radio** from any song (or use it as the radio source). Last.fm lists the songs and each one is matched on YouTube Music to play. |
+| **Last.fm as the source (optional)** | Add a free Last.fm API key and choose **Last.fm** under Settings → Music source, and the whole app follows it: Explore shows Last.fm's new albums, charts, top artists and genres (tags) with Last.fm's album art; Home shows the Last.fm chart, similar songs and your picks; Mix uses tag top tracks; radio uses similar songs. Last.fm only lists songs, so each one is matched on YouTube Music to play, and search stays on YouTube Music. |
 | **Global by default** | Quick picks, New releases, Trending and Charts show worldwide music. One switch makes them follow your country instead. |
 
 ### Yours

@@ -22,7 +22,7 @@ struct SettingsView: View {
     @AppStorage("country") private var country = "auto"
     @AppStorage("tasteLangs") private var tasteLangs = ""
     @AppStorage("lastfmKey") private var lastfmKey = ""
-    @AppStorage("radioSource") private var radioSource = "youtube"
+    @AppStorage("musicSource") private var musicSource = "youtube"
     @AppStorage("tasteArtists") private var tasteArtists = ""
     @AppStorage("homeHide") private var hidden = ""
     @AppStorage("ytSignedIn") private var signedIn = false
@@ -33,7 +33,7 @@ struct SettingsView: View {
     @State private var checking = false
 
     private let homeSections: [(id: String, label: String)] = [
-        ("moods", "Mood chips"), ("listen", "Listen again"), ("mix", "Picked for you"), ("because", "Because you played"), ("quick", "Quick picks"), ("lastfm", "Last.fm top tracks"), ("trend", "Trending"),
+        ("moods", "Mood chips"), ("listen", "Listen again"), ("mix", "Picked for you"), ("because", "Because you played"), ("quick", "Quick picks"), ("trend", "Trending"),
     ]
 
     private func homeBinding(_ id: String) -> Binding<Bool> {
@@ -115,19 +115,24 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    TextField("API key", text: $lastfmKey)
+                    Picker("Music source", selection: $musicSource) {
+                        Text("YouTube Music").tag("youtube")
+                        Text("Last.fm").tag("lastfm")
+                    }
+                    .pickerStyle(.segmented)
+                    TextField("Last.fm API key", text: $lastfmKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .font(.system(.body, design: .monospaced))
-                    Link("Get a free API key", destination: URL(string: "https://www.last.fm/api/account/create")!)
-                    Picker("Radio uses", selection: $radioSource) {
-                        Text("YouTube Music").tag("youtube")
-                        Text("Last.fm similar songs").tag("lastfm")
-                    }
+                    Link("Get a free Last.fm API key", destination: URL(string: "https://www.last.fm/api/account/create")!)
                 } header: {
-                    Text("Last.fm")
+                    Text("Music source")
                 } footer: {
-                    Text("Add a free Last.fm API key to see Last.fm charts and tags in Explore and on Home, and to start a radio from Last.fm's similar songs. Last.fm only lists songs, so each one is matched on YouTube Music to play it. Your key stays on this phone.")
+                    if musicSource == "lastfm" && lastfmKey.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text("Last.fm needs a free API key. Until you add one, the app keeps using YouTube Music.")
+                    } else {
+                        Text("With Last.fm chosen, Home, Explore (new releases, charts, top artists, genres), Mix and radio all come from Last.fm, with its album art. Last.fm only lists songs, so each one is matched on YouTube Music to play it, and search stays on YouTube Music. Your key stays on this phone.")
+                    }
                 }
 
                 Section {

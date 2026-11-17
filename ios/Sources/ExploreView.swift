@@ -49,14 +49,21 @@ struct ExploreView: View {
     @State private var data: ExploreData?
     @State private var charts: ChartsData?
     @State private var error: String?
+    @AppStorage("musicSource") private var musicSource = "youtube"        // "youtube" or "lastfm" (Settings)
+    @AppStorage("lastfmKey") private var lastfmKey = ""
+    private var lfm: Bool { musicSource == "lastfm" }
+    private var hasKey: Bool { !lastfmKey.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     if let e = error { Text(e).font(.caption).foregroundStyle(Color.red).padding(.horizontal, 20) }
-                    if data == nil && error == nil { ProgressView().frame(maxWidth: .infinity).padding(.top, 60) }
-                    LastFMExploreSection()
+                    if !lfm && data == nil && error == nil { ProgressView().frame(maxWidth: .infinity).padding(.top, 60) }
+                    if lfm {
+                        if hasKey { LastFMExplore() } else { LastFMSetupNote() }
+                    }
+                    if !lfm {
                     Shelf(title: "New releases", items: data?.newReleases ?? [])
                     Shelf(title: "Charts", items: charts?.playlists ?? [])
                     Shelf(title: "Top artists", items: charts?.artists ?? [])
@@ -82,6 +89,7 @@ struct ExploreView: View {
                         }
                         .padding(.horizontal, 20)
                     }
+                    }
                 }
                 .padding(.vertical, 8)
                 .padding(.bottom, 140)
@@ -92,12 +100,15 @@ struct ExploreView: View {
             .navigationDestination(for: Coll.self) { CollectionScreen(coll: $0) }
             .navigationDestination(for: MoodItem.self) { MoodScreen(mood: $0) }
             .navigationDestination(for: LFMSource.self) { LastFMListScreen(source: $0) }
-            .task { await load() }
+            .navigationDestination(for: LFMAlbum.self) { LastFMAlbumScreen(album: $0) }
+            .navigationDestination(for: LFMArtist.self) { LastFMArtistScreen(artist: $0) }
+            .task(id: musicSource) { await load() }
             .refreshable { await load() }
         }
     }
 
     private func load() async {
+        if lfm { return }
         do {
             data = try await engine.get("/api/explore")
             error = nil
