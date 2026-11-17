@@ -25,7 +25,7 @@ struct TrackRow: View {
 
 /// Song list with the same swipes as the web app: right = like, left = play next.
 struct SongList: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     let tracks: [Track]
     var onRemove: ((Track) -> Void)? = nil
 
@@ -77,7 +77,7 @@ struct SongList: View {
 
 /// A horizontal row of song cards.
 struct TrackShelf: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     let title: String
     var subtitle: String? = nil
     let tracks: [Track]
@@ -115,8 +115,8 @@ struct TrackShelf: View {
 }
 
 struct HomeView: View {
-    @EnvironmentObject var engine: EngineHost
-    @EnvironmentObject var player: PlayerModel
+    @Environment(EngineHost.self) private var engine
+    @Environment(PlayerModel.self) private var player
     @AppStorage("homeHide") private var hidden = ""             // comma-separated section ids switched off in Settings
     @AppStorage("recentSearches") private var recentStore = ""
     @AppStorage("ytSignedIn") private var signedIn = false
@@ -249,8 +249,8 @@ struct HomeView: View {
                     SettingsButton()
                 }
             }
-            .sheet(isPresented: $showTaste) { TasteSheet().environmentObject(engine) }
-            .sheet(isPresented: $showList) { SearchListView().environmentObject(engine).environmentObject(player) }
+            .sheet(isPresented: $showTaste) { TasteSheet().environment(engine) }
+            .sheet(isPresented: $showList) { SearchListView().environment(engine).environment(player) }
             .navigationDestination(for: Coll.self) { CollectionScreen(coll: $0) }
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search songs")
             .searchSuggestions {
@@ -267,7 +267,7 @@ struct HomeView: View {
             .task(id: query) { await loadSuggestions() }
             .task { await loadAll() }
             .refreshable { await loadAll() }
-            .onChange(of: query) { q in                                 // clearing the search box (or cancelling it) goes back to Home
+            .onChange(of: query) { _, q in                                 // clearing the search box (or cancelling it) goes back to Home
                 if q.trimmingCharacters(in: .whitespaces).isEmpty && mood == -1 {
                     results = []
                     noResults = false

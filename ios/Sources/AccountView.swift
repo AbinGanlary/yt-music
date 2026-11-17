@@ -3,7 +3,7 @@ import SwiftUI
 /// Optional Google sign-in through Google's "TV device code" flow: you approve a short code at google.com/device,
 /// and the app never sees your password. The tokens stay inside the app on this phone.
 struct SignInSheet: View {
-    @EnvironmentObject var engine: EngineHost
+    @Environment(EngineHost.self) private var engine
     @Environment(\.dismiss) private var dismiss
     @AppStorage("ytSignedIn") private var signedIn = false
     @AppStorage("ytName") private var accountName = ""

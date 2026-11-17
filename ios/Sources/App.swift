@@ -2,21 +2,21 @@ import SwiftUI
 
 @main
 struct YTMusicApp: App {
-    @StateObject private var player = PlayerModel()
+    @State private var player = PlayerModel()
 
     init() {
         URLCache.shared = URLCache(memoryCapacity: 64 << 20, diskCapacity: 512 << 20)      // covers stay cached between launches
     }
-    @StateObject private var engine = EngineHost.shared
+    @State private var engine = EngineHost.shared
     @AppStorage("theme") private var theme = 0              // 0 dark, 1 light, 2 follow the phone
     @AppStorage("accent") private var accentHex = "#ff6a3d"
 
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environmentObject(player)
-                .environmentObject(player.time)
-                .environmentObject(engine)
+                .environment(player)
+                .environment(player.time)
+                .environment(engine)
                 .background(EngineView().frame(width: 1, height: 1).opacity(0.01).allowsHitTesting(false))
                 .preferredColorScheme(theme == 0 ? .dark : theme == 1 ? .light : nil)
                 .tint(accentHex == "art" ? (player.artAccent ?? Color(hex: "#ff6a3d")) : Color(hex: accentHex))
@@ -25,12 +25,13 @@ struct YTMusicApp: App {
 }
 
 struct RootView: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     @State private var showNow = false
     @State private var newName = ""
     @State private var renameText = ""
 
     var body: some View {
+        @Bindable var player = player
         TabView {
             HomeView()
                 .tabItem { Label("Home", systemImage: "house.fill") }
@@ -63,15 +64,15 @@ struct RootView: View {
             Button("Save") { if let id = player.renaming { player.lib.rename(id, to: renameText) }; player.renaming = nil }
             Button("Cancel", role: .cancel) { player.renaming = nil }
         }
-        .onChange(of: player.renaming) { id in
+        .onChange(of: player.renaming) { _, id in
             if let id = id { renameText = player.lib.playlist(id)?.name ?? "" }
         }
         .animation(.easeOut(duration: 0.25), value: player.message)
         .sheet(item: $player.shareItem) { item in ShareSheet(url: item.url).ignoresSafeArea() }
         .sheet(isPresented: $showNow) {
             NowPlayingView()
-                .environmentObject(player)
-                .environmentObject(player.time)
+                .environment(player)
+                .environment(player.time)
         }
     }
 
@@ -88,7 +89,7 @@ struct RootView: View {
 }
 
 struct Toast: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     var body: some View {
         if let m = player.message {
             Text(m)

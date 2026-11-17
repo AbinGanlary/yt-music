@@ -1,6 +1,6 @@
 # The iPhone app
 
-A SwiftUI app (iOS 16+). The YouTube engine is JavaScript (`Engine/`); the app runs it in a hidden web view and talks to it through a small bridge.
+A SwiftUI app (iOS 17+). The YouTube engine is JavaScript (`Engine/`); the app runs it in a hidden web view and talks to it through a small bridge.
 
 ## Build
 

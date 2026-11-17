@@ -96,9 +96,10 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply, WKURLSchemeHandle
 
 /// The YouTube engine, running in a hidden web view.
 @MainActor
-final class EngineHost: NSObject, ObservableObject, WKNavigationDelegate {
+@Observable
+final class EngineHost: NSObject, WKNavigationDelegate {
     static let shared = EngineHost()
-    @Published var status = "Engine: starting…"
+    var status = "Engine: starting…"
     let webView: WKWebView
     private let bridge = Bridge()
     private var loaded = false

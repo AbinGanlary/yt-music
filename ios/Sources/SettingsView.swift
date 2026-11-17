@@ -7,8 +7,8 @@ private var appVersion: String {
 }
 
 struct SettingsView: View {
-    @EnvironmentObject var player: PlayerModel
-    @EnvironmentObject var engine: EngineHost
+    @Environment(PlayerModel.self) private var player
+    @Environment(EngineHost.self) private var engine
     @Environment(\.dismiss) private var dismiss
     @AppStorage("theme") private var theme = 0
     @AppStorage("accent") private var accentHex = "#ff6a3d"          // a colour, or "art" to follow the cover
@@ -59,6 +59,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        @Bindable var player = player
         NavigationStack {
             Form {
                 Section {
@@ -197,8 +198,8 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Done") { dismiss() } } }
-            .sheet(isPresented: $showSignIn) { SignInSheet().environmentObject(engine) }
-            .sheet(isPresented: $showTaste) { TasteSheet().environmentObject(engine) }
+            .sheet(isPresented: $showSignIn) { SignInSheet().environment(engine) }
+            .sheet(isPresented: $showTaste) { TasteSheet().environment(engine) }
             .sheet(isPresented: Binding(get: { report != nil }, set: { if !$0 { report = nil } })) {
                 ReportSheet(title: report?.title ?? "", text: report?.text ?? "")
             }

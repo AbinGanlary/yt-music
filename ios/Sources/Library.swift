@@ -36,21 +36,27 @@ private struct LibraryData: Codable {
 
 /// Likes, listening history and playlists. Kept in one JSON file in the app's private storage.
 @MainActor
-final class Library: ObservableObject {
-    @Published private(set) var likes: [Track] = [] { didSet { likedIDs = Set(likes.map { $0.id }) } }
+@Observable
+final class Library {
+    private(set) var likes: [Track] = []
     private(set) var likedIDs = Set<String>()
-    @Published private(set) var history: [Track] = []
-    @Published private(set) var playlists: [Playlist] = []
-    @Published private(set) var plays: [PlayEvent] = []
-    @Published private(set) var dislikes: [Track] = [] { didSet { dislikedIDs = Set(dislikes.map { $0.id }) } }
+    private(set) var history: [Track] = []
+    private(set) var playlists: [Playlist] = []
+    private(set) var plays: [PlayEvent] = []
+    private(set) var dislikes: [Track] = []
     private(set) var dislikedIDs = Set<String>()
-    @Published private(set) var saved: [Coll] = []
+    private(set) var saved: [Coll] = []
 
     private let file: URL
 
-    init() {
-        let dir = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        file = (dir ?? FileManager.default.temporaryDirectory).appendingPathComponent("library.json")
+    /// `file` is only given by tests; the app keeps its library in Application Support.
+    init(file override: URL? = nil) {
+        if let o = override {
+            file = o
+        } else {
+            let dir = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            file = (dir ?? FileManager.default.temporaryDirectory).appendingPathComponent("library.json")
+        }
         if let d = try? Data(contentsOf: file), let l = try? JSONDecoder().decode(LibraryData.self, from: d) {
             likes = l.likes
             history = l.history
@@ -59,9 +65,13 @@ final class Library: ObservableObject {
             dislikes = l.dislikes
             saved = l.saved
         }
+        likedIDs = Set(likes.map { $0.id })
+        dislikedIDs = Set(dislikes.map { $0.id })
     }
 
     private func save() {
+        likedIDs = Set(likes.map { $0.id })                      // keep the quick lookups in step with the lists
+        dislikedIDs = Set(dislikes.map { $0.id })
         let d = LibraryData(likes: likes, history: history, playlists: playlists, plays: plays, dislikes: dislikes, saved: saved)
         if let data = try? JSONEncoder().encode(d) { try? data.write(to: file, options: .atomic) }
     }

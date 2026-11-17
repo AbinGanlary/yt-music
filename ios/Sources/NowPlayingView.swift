@@ -2,7 +2,7 @@ import SwiftUI
 import AVKit
 
 struct NowPlayingView: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     @State private var page = 0                       // 0 cover, 1 lyrics, 2 queue
 
     var body: some View {
@@ -120,8 +120,8 @@ struct NowPlayingView: View {
 }
 
 struct LyricsView: View {
-    @EnvironmentObject var player: PlayerModel
-    @EnvironmentObject var time: PlaybackClock
+    @Environment(PlayerModel.self) private var player
+    @Environment(PlaybackClock.self) private var time
 
     var body: some View {
         Group {
@@ -170,7 +170,7 @@ struct LyricsView: View {
                 .padding(.horizontal, 28)
                 .padding(.vertical, 40)
             }
-            .onChange(of: active) { i in withAnimation(.easeOut(duration: 0.3)) { proxy.scrollTo(i, anchor: .center) } }
+            .onChange(of: active) { _, i in withAnimation(.easeOut(duration: 0.3)) { proxy.scrollTo(i, anchor: .center) } }
         }
     }
 
@@ -187,7 +187,7 @@ struct LyricsView: View {
 }
 
 struct QueueView: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
 
     var body: some View {
         List {
@@ -210,8 +210,8 @@ struct QueueView: View {
 
 /// The seek bar and the two times. It is the only part of Now Playing that redraws as the song plays.
 struct ScrubberView: View {
-    @EnvironmentObject var player: PlayerModel
-    @EnvironmentObject var time: PlaybackClock
+    @Environment(PlayerModel.self) private var player
+    @Environment(PlaybackClock.self) private var time
     @State private var scrubbing: Double?
 
     var body: some View {

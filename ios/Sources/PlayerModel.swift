@@ -8,9 +8,10 @@ private let mobileUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) A
 /// The playback position. It changes four times a second, so it lives apart from PlayerModel:
 /// only the views that show the time (scrubber, progress bar, lyrics) redraw on every tick, not every list and menu.
 @MainActor
-final class PlaybackClock: ObservableObject {
-    @Published var elapsed: Double = 0
-    @Published var duration: Double = 0
+@Observable
+final class PlaybackClock {
+    var elapsed: Double = 0
+    var duration: Double = 0
 }
 
 enum LyricsState {
@@ -23,34 +24,35 @@ enum LyricsState {
 /// Plays real songs: the engine finds a stream address, AVPlayer streams it, and if YouTube refuses the stream
 /// the song is downloaded first (over the app's IPv4 client) and played from a file.
 @MainActor
-final class PlayerModel: ObservableObject {
-    @Published var queue: [Track] = []
-    @Published var hasTrack = false                    // false until a song has been played (or restored from last time)
-    @Published var index = 0
-    @Published var isPlaying = false
+@Observable
+final class PlayerModel {
+    var queue: [Track] = []
+    var hasTrack = false                    // false until a song has been played (or restored from last time)
+    var index = 0
+    var isPlaying = false
     let time = PlaybackClock()
     var elapsed: Double { get { time.elapsed } set { time.elapsed = newValue } }
     var duration: Double { get { time.duration } set { if abs(time.duration - newValue) > 0.01 { time.duration = newValue } } }
-    @Published var naming = false                      // the "New playlist" name prompt
+    var naming = false                      // the "New playlist" name prompt
     let lib = Library()
     let downloads = Downloads()
     private var pendingTrack: Track?
-    @Published var message: String?
-    @Published var status = "Nothing played yet"
-    @Published var lyricsState: LyricsState = .idle
-    @Published var autoplay = true
-    @Published var speed: Float = 1
-    @Published var shuffle = false
-    @Published var renaming: UUID?                       // the playlist whose name is being changed
-    @Published var repeatMode = 0                      // 0 off, 1 all, 2 one
-    @Published var artAccent: Color?                    // the accent when Settings → Appearance is set to "Artwork"
-    @Published var sleepLabel: String?                  // "15 min", "End of song", or nil when off
-    @Published var shareItem: ShareItem?                // a tagged .m4a ready for the share sheet
+    var message: String?
+    var status = "Nothing played yet"
+    var lyricsState: LyricsState = .idle
+    var autoplay = true
+    var speed: Float = 1
+    var shuffle = false
+    var renaming: UUID?                       // the playlist whose name is being changed
+    var repeatMode = 0                      // 0 off, 1 all, 2 one
+    var artAccent: Color?                    // the accent when Settings → Appearance is set to "Artwork"
+    var sleepLabel: String?                  // "15 min", "End of song", or nil when off
+    var shareItem: ShareItem?                // a tagged .m4a ready for the share sheet
 
     private let engine = EngineHost.shared
     private let player = AVPlayer()
     private var loadTask: Task<Void, Never>?
-    private var bag = Set<AnyCancellable>()
+    @ObservationIgnored private var bag = Set<AnyCancellable>()
     private var lastInfoUpdate = 0.0
     private var nowArtwork: MPMediaItemArtwork?
     private var nowArtworkFor: String?
@@ -90,7 +92,7 @@ final class PlayerModel: ObservableObject {
 
         player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] t in
             let s = t.seconds
-            Task { @MainActor in self?.tick(s) }
+            MainActor.assumeIsolated { self?.tick(s) }          // delivered on the main queue, so no task is needed
         }
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime)
             .sink { [weak self] _ in Task { @MainActor in self?.songEnded() } }
@@ -104,8 +106,6 @@ final class PlayerModel: ObservableObject {
                 if s == .paused { self.saveState(force: true) }
             }
             .store(in: &bag)
-        lib.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
-        downloads.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         setupRemote()
         restore()
     }

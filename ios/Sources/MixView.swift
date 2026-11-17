@@ -4,8 +4,8 @@ private let presets = ["Lo-fi", "Tamil hip-hop", "90s Bollywood", "K-pop", "Indi
 
 /// Mix tab: genres, moods and styles you add. Each one is searched for songs and playlists, and "Play mix" blends them.
 struct MixView: View {
-    @EnvironmentObject var engine: EngineHost
-    @EnvironmentObject var player: PlayerModel
+    @Environment(EngineHost.self) private var engine
+    @Environment(PlayerModel.self) private var player
     @AppStorage("mixGenres") private var stored = ""
     @State private var loaded: [String: GenreData] = [:]
     @State private var selected = "All"

@@ -47,13 +47,13 @@ struct CachedImage: View {
 
 /// The gear that opens Settings. It sits in the top bar of every tab so it is always in reach.
 struct SettingsButton: View {
-    @EnvironmentObject var player: PlayerModel
-    @EnvironmentObject var engine: EngineHost
+    @Environment(PlayerModel.self) private var player
+    @Environment(EngineHost.self) private var engine
     @State private var show = false
 
     var body: some View {
         Button { show = true } label: { Image(systemName: "gearshape") }
             .accessibilityLabel("Settings")
-            .sheet(isPresented: $show) { SettingsView().environmentObject(player).environmentObject(engine) }
+            .sheet(isPresented: $show) { SettingsView().environment(player).environment(engine) }
     }
 }

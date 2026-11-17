@@ -45,7 +45,7 @@ private func moodColor(_ s: String) -> Color {
 }
 
 struct ExploreView: View {
-    @EnvironmentObject var engine: EngineHost
+    @Environment(EngineHost.self) private var engine
     @State private var data: ExploreData?
     @State private var charts: ChartsData?
     @State private var error: String?
@@ -105,7 +105,7 @@ struct ExploreView: View {
 }
 
 struct MoodScreen: View {
-    @EnvironmentObject var engine: EngineHost
+    @Environment(EngineHost.self) private var engine
     let mood: MoodItem
     @State private var items: [Coll] = []
     @State private var loaded = false
@@ -134,8 +134,8 @@ struct MoodScreen: View {
 
 /// An album, playlist or artist page.
 struct CollectionScreen: View {
-    @EnvironmentObject var engine: EngineHost
-    @EnvironmentObject var player: PlayerModel
+    @Environment(EngineHost.self) private var engine
+    @Environment(PlayerModel.self) private var player
     let coll: Coll
     @State private var page: PageData?
     @State private var error: String?

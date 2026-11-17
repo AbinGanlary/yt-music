@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AnalyticsView: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
 
     private struct Stat { let name: String; let secs: Double; let count: Int }
 

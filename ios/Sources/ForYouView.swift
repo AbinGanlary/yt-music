@@ -17,7 +17,7 @@ enum Taste {
 }
 
 struct TasteSheet: View {
-    @EnvironmentObject var engine: EngineHost
+    @Environment(EngineHost.self) private var engine
     @Environment(\.dismiss) private var dismiss
     @AppStorage("tasteLangs") private var langStore = ""
     @AppStorage("tasteArtists") private var artistStore = ""
@@ -98,7 +98,7 @@ struct TasteSheet: View {
 
 /// Settings → For you → Location: follow the phone's region or pick a country.
 struct CountryPicker: View {
-    @EnvironmentObject var engine: EngineHost
+    @Environment(EngineHost.self) private var engine
     @AppStorage("country") private var country = "auto"
     @State private var codes: [String] = []
     @State private var query = ""

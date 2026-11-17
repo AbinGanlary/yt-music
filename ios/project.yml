@@ -2,7 +2,7 @@ name: YTMusic
 options:
   bundleIdPrefix: com.ytmusic
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "17.0"
 targets:
   YTMusic:
     type: application
@@ -15,6 +15,8 @@ targets:
       path: Info.plist
       properties:
         UIBackgroundModes: [audio]
+    scheme:
+      testTargets: [YTMusicTests]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ytmusic.swiftui
@@ -23,8 +25,20 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: "YT Music"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        MARKETING_VERSION: "2.0.1"
+        MARKETING_VERSION: "2.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  YTMusicTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: YTMusic
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ytmusic.swiftui.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"

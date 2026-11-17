@@ -7,7 +7,7 @@
 **A fast, private, ad-free YouTube Music player for your iPhone.**<br>
 A native SwiftUI app that talks to YouTube Music straight from the phone. No server, no subscription, no PC needed.
 
-![Platform](https://img.shields.io/badge/platform-iOS%2016%2B-black?logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iOS%2017%2B-black?logo=apple&logoColor=white)
 ![UI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 ![Engine](https://img.shields.io/badge/engine-youtubei.js-ff6a3d)
 ![Build](https://img.shields.io/badge/build-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)

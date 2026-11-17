@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MiniPlayer: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     let open: () -> Void
     @State private var drag: CGFloat = 0
 
@@ -47,7 +47,7 @@ struct MiniPlayer: View {
 
 /// The thin progress bar under the mini player. It is its own view so only it redraws as the song plays.
 struct MiniProgress: View {
-    @EnvironmentObject var time: PlaybackClock
+    @Environment(PlaybackClock.self) private var time
     var body: some View {
         ProgressView(value: min(1, time.elapsed / max(1, time.duration))).tint(Theme.accent).padding(.horizontal, 6)
     }
@@ -55,7 +55,7 @@ struct MiniProgress: View {
 
 /// Leaves room at the bottom of a scrolling screen for the mini player, so the last rows are not hidden behind it.
 struct MiniPlayerClearance: ViewModifier {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     func body(content: Content) -> some View {
         content.safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: player.hasTrack ? 96 : 0) }
     }

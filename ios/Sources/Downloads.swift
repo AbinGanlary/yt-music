@@ -2,8 +2,9 @@ import SwiftUI
 
 /// Songs saved for offline listening: an .m4a file plus a small .json with the song's details, in the app's private storage.
 @MainActor
-final class Downloads: ObservableObject {
-    @Published private(set) var tracks: [Track] = []
+@Observable
+final class Downloads {
+    private(set) var tracks: [Track] = []
     private let dir: URL
 
     init() {

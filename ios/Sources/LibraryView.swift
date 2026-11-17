@@ -9,12 +9,12 @@ enum LibSource: Hashable {
 }
 
 struct LibraryView: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     @State private var picking = false
     @State private var showSettings = false
     @State private var showList = false
     @AppStorage("ytSignedIn") private var signedIn = false
-    @EnvironmentObject var engine: EngineHost
+    @Environment(EngineHost.self) private var engine
 
     var body: some View {
         let lib = player.lib
@@ -106,8 +106,8 @@ struct LibraryView: View {
                 }
             }
             .navigationDestination(for: LibSource.self) { TrackListScreen(source: $0) }
-            .sheet(isPresented: $showSettings) { SettingsView().environmentObject(player).environmentObject(engine) }
-            .sheet(isPresented: $showList) { SearchListView().environmentObject(engine).environmentObject(player) }
+            .sheet(isPresented: $showSettings) { SettingsView().environment(player).environment(engine) }
+            .sheet(isPresented: $showList) { SearchListView().environment(engine).environment(player) }
             .navigationDestination(for: Coll.self) { CollectionScreen(coll: $0) }
         }
     }
@@ -140,7 +140,7 @@ struct LibraryView: View {
 
 /// One list of songs: liked, history, or a playlist. It reads from the library each time, so it stays current.
 struct TrackListScreen: View {
-    @EnvironmentObject var player: PlayerModel
+    @Environment(PlayerModel.self) private var player
     let source: LibSource
 
     private var title: String {
