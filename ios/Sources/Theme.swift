@@ -39,6 +39,7 @@ let accentChoices: [(name: String, hex: String)] = [
 /// "1 song" or "5 songs".
 func songsLabel(_ n: Int) -> String { n == 1 ? "1 song" : "\(n) songs" }
 
+@MainActor
 func tap(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
     UIImpactFeedbackGenerator(style: style).impactOccurred()
 }

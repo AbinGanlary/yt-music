@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Decoded covers kept in memory, so scrolling a list shows them at once instead of reloading them every time a row comes back.
-final class ImageCache {
+/// NSCache is thread-safe, so sharing this class between threads is safe.
+final class ImageCache: @unchecked Sendable {
     static let shared = ImageCache()
     private let cache = NSCache<NSURL, UIImage>()
     private init() { cache.countLimit = 400 }

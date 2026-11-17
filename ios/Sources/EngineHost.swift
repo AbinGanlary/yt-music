@@ -73,7 +73,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply, WKURLSchemeHandle
     }
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
 
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage, replyHandler: @escaping (Any?, String?) -> Void) {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage, replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void) {
         guard let o = message.body as? [String: Any], let s = o["url"] as? String, let url = URL(string: s) else {
             replyHandler(nil, "bad request"); return
         }
