@@ -5,6 +5,12 @@ import MediaPlayer
 
 private let mobileUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
 
+/// iOS asks for the lock-screen cover from a background thread. The closure is built here, outside any actor,
+/// so Swift does not mark it "main thread only" (which would crash the app the moment iOS calls it).
+func makeNowPlayingArtwork(_ image: UIImage) -> MPMediaItemArtwork {
+    MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+}
+
 /// The playback position. It changes four times a second, so it lives apart from PlayerModel:
 /// only the views that show the time (scrubber, progress bar, lyrics) redraw on every tick, not every list and menu.
 @MainActor
@@ -95,6 +101,7 @@ final class PlayerModel {
             MainActor.assumeIsolated { self?.tick(s) }          // delivered on the main queue, so no task is needed
         }
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in Task { @MainActor in self?.songEnded() } }
             .store(in: &bag)
         player.publisher(for: \.timeControlStatus)
@@ -600,7 +607,7 @@ final class PlayerModel {
         guard let u = sizedURL(t.thumbnail?.absoluteString, 544) ?? t.thumbnail else { return }
         guard let img = await ImageCache.shared.load(u) else { return }
         guard current.id == t.id else { return }
-        nowArtwork = MPMediaItemArtwork(boundsSize: img.size) { _ in img }
+        nowArtwork = makeNowPlayingArtwork(img)
         nowArtworkFor = t.id
         updateNowPlaying(force: true)
     }
@@ -721,12 +728,13 @@ final class PlayerModel {
 
     private func setupRemote() {
         let c = MPRemoteCommandCenter.shared()
-        c.playCommand.addTarget { [weak self] _ in Task { @MainActor in self?.toggleIfPaused(true) }; return .success }
-        c.pauseCommand.addTarget { [weak self] _ in Task { @MainActor in self?.toggleIfPaused(false) }; return .success }
-        c.togglePlayPauseCommand.addTarget { [weak self] _ in Task { @MainActor in self?.toggle() }; return .success }
-        c.nextTrackCommand.addTarget { [weak self] _ in Task { @MainActor in self?.next() }; return .success }
-        c.previousTrackCommand.addTarget { [weak self] _ in Task { @MainActor in self?.previous() }; return .success }
-        c.changePlaybackPositionCommand.addTarget { [weak self] event in
+        // These handlers are called by iOS, not always on the main thread: `@Sendable` keeps Swift from marking them "main thread only".
+        c.playCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.toggleIfPaused(true) }; return .success }
+        c.pauseCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.toggleIfPaused(false) }; return .success }
+        c.togglePlayPauseCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.toggle() }; return .success }
+        c.nextTrackCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.next() }; return .success }
+        c.previousTrackCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.previous() }; return .success }
+        c.changePlaybackPositionCommand.addTarget { @Sendable [weak self] event in
             if let e = event as? MPChangePlaybackPositionCommandEvent {
                 let pos = e.positionTime
                 Task { @MainActor in
