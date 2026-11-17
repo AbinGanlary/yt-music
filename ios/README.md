@@ -24,6 +24,7 @@ open YTMusic.xcodeproj
 | `Sources/Library.swift` | Likes, history, playlists, saved items and stats, kept in one JSON file; backup import and export |
 | `Sources/Downloads.swift` | Songs saved for offline listening |
 | `Sources/M4ATagger.swift` | Writes title, artist, album and cover into exported `.m4a` files |
+| `Sources/LastFM.swift` | Last.fm API calls, and matching Last.fm songs to YouTube Music songs |
 | `Sources/*View.swift` | The screens |
 | `Engine/host.html`, `host.js` | The page the engine runs in |
 | `Engine/js/engine/` | The engine: search, home, charts, albums, artists, lyrics, radio and stream addresses |

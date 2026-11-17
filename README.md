@@ -57,6 +57,7 @@ A native SwiftUI app that talks to YouTube Music straight from the phone. No ser
 | **Mix** | Add any genre, mood or style (*Lo-fi*, *Tamil hip-hop*, *90s Bollywood*…). Each one is searched for songs and playlists the moment you add it, and **Play mix** blends them all into one queue. |
 | **Explore** | New releases, charts (global or your country), top artists, and **Moods & genres** tiles, with album, playlist and artist pages. |
 | **Song versions** | Music videos play as their *song* version (clean audio, album art), like YouTube Music does. |
+| **Last.fm (optional)** | Add a free Last.fm API key in Settings to get Last.fm top tracks and popular tags in Explore, a Last.fm shelf on Home, and a **Last.fm radio** from any song (or use it as the radio source). Last.fm lists the songs and each one is matched on YouTube Music to play. |
 | **Global by default** | Quick picks, New releases, Trending and Charts show worldwide music. One switch makes them follow your country instead. |
 
 ### Yours
@@ -126,7 +127,7 @@ docs/                 app icon, the README illustrations and their source
 
 ## Tech
 
-SwiftUI · AVPlayer · `youtubei.js` (run in WKWebView) · Network.framework · XcodeGen · GitHub Actions on a macOS runner.
+SwiftUI · AVPlayer · `youtubei.js` (run in WKWebView) · Last.fm API (optional) · Network.framework · XcodeGen · GitHub Actions on a macOS runner.
 
 ## Notes
 
@@ -138,4 +139,4 @@ SwiftUI · AVPlayer · `youtubei.js` (run in WKWebView) · Network.framework · 
 
 ## Acknowledgements
 
-Inspired by [SimpMusic](https://github.com/maxrave-dev/SimpMusic). Built with [youtubei.js](https://github.com/LuanRT/YouTube.js), [XcodeGen](https://github.com/yonaskolb/XcodeGen), [LRCLIB](https://lrclib.net) for fallback lyrics, and [SponsorBlock](https://sponsor.ajay.app) for the optional skip feature.
+Inspired by [SimpMusic](https://github.com/maxrave-dev/SimpMusic). Built with [youtubei.js](https://github.com/LuanRT/YouTube.js), [XcodeGen](https://github.com/yonaskolb/XcodeGen), [LRCLIB](https://lrclib.net) for fallback lyrics, [Last.fm](https://www.last.fm/api) for optional charts, tags and similar songs, and [SponsorBlock](https://sponsor.ajay.app) for the optional skip feature.
