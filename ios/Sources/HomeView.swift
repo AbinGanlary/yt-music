@@ -109,7 +109,7 @@ struct TrackShelf: View {
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 0))
         }
     }
 }
@@ -129,7 +129,8 @@ struct HomeView: View {
     @State private var picked: [Track] = []
     @State private var pickedLabel = ""
     @State private var mood = 0
-    @State private var quick: [Track] = sampleTracks
+    @State private var quick: [Track] = []
+    @State private var noResults = false
     @State private var trending: [Track] = []
     @State private var because: [Track] = []
     @State private var becauseTitle = ""
@@ -147,7 +148,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
-                if on("moods") {
+                if on("moods") && mood != -1 {                  // not while looking at search results
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(moods.indices, id: \.self) { i in
@@ -172,6 +173,10 @@ struct HomeView: View {
 
                 if let e = error {
                     Text(e).font(.caption2).foregroundStyle(Color.red)
+                        .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                }
+                if noResults {
+                    Text("No results for “\(query)”. Try another spelling or fewer words.").font(.subheadline).foregroundStyle(Theme.muted)
                         .listRowBackground(Color.clear).listRowSeparator(.hidden)
                 }
 
@@ -213,17 +218,21 @@ struct HomeView: View {
                 }
 
                 if on("quick") || !results.isEmpty {
-                    Section {
-                        if busy { ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear).listRowSeparator(.hidden) }
-                        SongList(tracks: results.isEmpty ? quick : results)
-                    } header: {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(results.isEmpty ? "Start radio from a song" : "Results").font(.footnote).foregroundStyle(Theme.muted)
-                            Text(heading).font(.title.bold()).foregroundStyle(Color.primary)
-                        }
-                        .textCase(nil)
-                        .padding(.top, 8)
+                    VStack(alignment: .leading, spacing: 0) {
+                        if results.isEmpty { Text("Start radio from a song").font(.footnote).foregroundStyle(Theme.muted) }
+                        Text(results.isEmpty ? heading : (mood == -1 ? "Results for \(heading)" : heading))
+                            .font(results.isEmpty ? .title.bold() : .title2.bold())
+                            .foregroundStyle(Color.primary)
                     }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 4, trailing: 20))
+
+                    if busy || (results.isEmpty && quick.isEmpty && error == nil) {
+                        ProgressView().frame(maxWidth: .infinity).padding(.vertical, 20)
+                            .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                    }
+                    SongList(tracks: results.isEmpty ? quick : results)
                 }
 
                 if results.isEmpty && on("trend") { TrackShelf(title: "Trending", tracks: trending) }
@@ -246,13 +255,27 @@ struct HomeView: View {
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search songs")
             .searchSuggestions {
                 ForEach(query.isEmpty ? recent : suggestions, id: \.self) { s in
-                    Label(s, systemImage: query.isEmpty ? "clock" : "magnifyingglass").searchCompletion(s)
+                    Button {                                            // tapping a suggestion searches straight away
+                        query = s
+                        mood = -1
+                        remember(s)
+                        run(s, heading: "“\(s)”")
+                    } label: { Label(s, systemImage: query.isEmpty ? "clock" : "magnifyingglass") }
                 }
             }
             .onSubmit(of: .search) { mood = -1; remember(query); run(query, heading: "“\(query)”") }
             .task(id: query) { await loadSuggestions() }
             .task { await loadAll() }
             .refreshable { await loadAll() }
+            .onChange(of: query) { q in                                 // clearing the search box (or cancelling it) goes back to Home
+                if q.trimmingCharacters(in: .whitespaces).isEmpty && mood == -1 {
+                    results = []
+                    noResults = false
+                    heading = "Quick picks"
+                    mood = 0
+                }
+            }
+            .miniPlayerClearance()
         }
     }
 
@@ -297,12 +320,13 @@ struct HomeView: View {
         guard !text.isEmpty else { return }
         busy = true
         error = nil
+        noResults = false
         Task {
             do {
                 let r = try await engine.search(text)
                 results = r
                 heading = h
-                if r.isEmpty { error = "No results" }
+                noResults = r.isEmpty
             } catch { self.error = "Search failed: " + String(error.localizedDescription.prefix(160)) }
             busy = false
         }

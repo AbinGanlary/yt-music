@@ -70,11 +70,3 @@ struct Cover: View {
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 }
-
-/// Shown until the engine has answered (and if it never does).
-let sampleTracks: [Track] = [
-    Track(id: "s1", title: "Midnight Drive", artist: "Neon Harbor", seconds: 214),
-    Track(id: "s2", title: "Paper Planes", artist: "Lila Moreno", seconds: 187),
-    Track(id: "s3", title: "Slow Burn", artist: "The Quiet Hours", seconds: 243),
-    Track(id: "s4", title: "Golden Hour", artist: "Sunday Static", seconds: 201),
-]

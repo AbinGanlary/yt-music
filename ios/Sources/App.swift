@@ -44,10 +44,14 @@ struct RootView: View {
                 .tabItem { Label("Analytics", systemImage: "chart.bar.fill") }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            MiniPlayer(open: { showNow = true })
-                .padding(.horizontal, 10)
-                .padding(.bottom, 52)                       // sits just above the tab bar
+            if player.hasTrack {                            // nothing has played yet: no mini player
+                MiniPlayer(open: { showNow = true })
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 52)                   // sits just above the tab bar
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .animation(.easeOut(duration: 0.25), value: player.hasTrack)
         .overlay(alignment: .top) { Toast() }
         .alert("New playlist", isPresented: $player.naming) {
             TextField("Name", text: $newName)

@@ -217,6 +217,7 @@ struct CollectionScreen: View {
         .scrollContentBackground(.hidden)
         .background(Theme.bg)
         .navigationBarTitleDisplayMode(.inline)
+        .miniPlayerClearance()
         .task { await load() }
     }
 

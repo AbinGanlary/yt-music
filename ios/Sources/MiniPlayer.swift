@@ -52,3 +52,14 @@ struct MiniProgress: View {
         ProgressView(value: min(1, time.elapsed / max(1, time.duration))).tint(Theme.accent).padding(.horizontal, 6)
     }
 }
+
+/// Leaves room at the bottom of a scrolling screen for the mini player, so the last rows are not hidden behind it.
+struct MiniPlayerClearance: ViewModifier {
+    @EnvironmentObject var player: PlayerModel
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: player.hasTrack ? 96 : 0) }
+    }
+}
+extension View {
+    func miniPlayerClearance() -> some View { modifier(MiniPlayerClearance()) }
+}

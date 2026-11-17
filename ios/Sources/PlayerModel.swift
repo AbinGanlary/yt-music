@@ -24,7 +24,8 @@ enum LyricsState {
 /// the song is downloaded first (over the app's IPv4 client) and played from a file.
 @MainActor
 final class PlayerModel: ObservableObject {
-    @Published var queue: [Track] = sampleTracks
+    @Published var queue: [Track] = []
+    @Published var hasTrack = false                    // false until a song has been played (or restored from last time)
     @Published var index = 0
     @Published var isPlaying = false
     let time = PlaybackClock()
@@ -62,6 +63,8 @@ final class PlayerModel: ObservableObject {
     private var expected = 0.0                           // how long YouTube says this song is (0 = unknown)
     private var endedHandled = false
     private var extending = false
+    private var resumeAt = 0.0                          // where to carry on when the restored song is played
+    private var lastSaveAt = Date.distantPast
     private var fallbackStreak = 0                      // songs in a row whose stream was refused (Auto then downloads first)
     private var songsSinceStreamTry = 0
     private var prefetch: (id: String, task: Task<(file: URL, info: StreamInfo)?, Never>)?
@@ -77,7 +80,8 @@ final class PlayerModel: ObservableObject {
     private var segments: [[Double]] = []               // SponsorBlock: parts to skip, [start, end]
     private var sponsorBlockOn: Bool { UserDefaults.standard.bool(forKey: "sponsorBlock") }
 
-    var current: Track { queue[min(index, queue.count - 1)] }
+    private static let nothing = Track(id: "none", title: "Nothing playing", artist: "", seconds: 1)
+    var current: Track { queue.indices.contains(index) ? queue[index] : Self.nothing }
     var liked: Set<String> { lib.likedIDs }
 
     init() {
@@ -97,11 +101,13 @@ final class PlayerModel: ObservableObject {
                 guard let self = self else { return }
                 self.isPlaying = (s != .paused)
                 self.updateNowPlaying(force: true)
+                if s == .paused { self.saveState(force: true) }
             }
             .store(in: &bag)
         lib.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         downloads.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }.store(in: &bag)
         setupRemote()
+        restore()
     }
 
     // MARK: choosing what plays
@@ -142,6 +148,7 @@ final class PlayerModel: ObservableObject {
     }
 
     func toggleShuffle() {
+        guard hasTrack else { return }
         shuffle.toggle()
         let cur = current
         if shuffle {
@@ -188,10 +195,12 @@ final class PlayerModel: ObservableObject {
         }
     }
     func previous() {
+        guard hasTrack, !queue.isEmpty else { return }
         if elapsed > 3 { seek(0) } else { index = (index + queue.count - 1) % queue.count; start() }
     }
     func toggle() {
-        if player.currentItem == nil { start(); return }
+        guard hasTrack else { return }
+        if player.currentItem == nil { start(resume: true); return }
         if player.timeControlStatus == .paused { player.play() } else { player.pause() }
     }
     func seek(_ fraction: Double) {
@@ -206,6 +215,7 @@ final class PlayerModel: ObservableObject {
         if now && UserDefaults.standard.bool(forKey: "smartDl") { saveOffline(t, quiet: true) }      // Smart downloads
     }
     func playNext(_ t: Track) {
+        if !hasTrack { play(t); return }
         guard t != current else { return }
         let cur = current
         queue.removeAll { $0 == t }
@@ -288,8 +298,10 @@ final class PlayerModel: ObservableObject {
 
     // MARK: getting the audio
 
-    private func start() {
+    private func start(resume: Bool = false) {
         loadTask?.cancel()
+        if !resume { resumeAt = 0 }
+        hasTrack = true
         flushListen()
         let t = current
         playingTrack = t
@@ -309,6 +321,7 @@ final class PlayerModel: ObservableObject {
         player.pause()
         player.replaceCurrentItem(with: nil)
         updateNowPlaying(force: true)
+        saveState(force: true)
         loadTask = Task { await load(t) }
     }
 
@@ -433,6 +446,12 @@ final class PlayerModel: ObservableObject {
             if seconds > lastSec, seconds - lastSec < 2 { listened += seconds - lastSec }
             lastSec = seconds
             elapsed = seconds
+            saveState()
+            if resumeAt > 1, let item = player.currentItem, item.status == .readyToPlay {     // the restored song carries on where it was
+                let r = resumeAt
+                resumeAt = 0
+                seekTo(seconds: r)
+            }
             if !segments.isEmpty, let hit = segments.first(where: { seconds >= $0[0] && seconds < $0[1] - 0.6 }) { seekTo(seconds: hit[1]) }
         }
         // iOS sometimes reads these audio files as twice as long (and plays silence after the real end), so when the
@@ -461,6 +480,36 @@ final class PlayerModel: ObservableObject {
                   let file = try? await self.download(info, n, quiet: true) else { return nil }
             return (file, info)
         })
+    }
+
+    // MARK: remembering what was playing
+
+    private struct SavedPlayback: Codable {
+        var queue: [Track]
+        var index: Int
+        var elapsed: Double
+    }
+
+    /// Keeps the queue and position, so the mini player is there next time the app opens.
+    private func saveState(force: Bool = false) {
+        guard hasTrack, !queue.isEmpty else { return }
+        if !force && Date().timeIntervalSince(lastSaveAt) < 8 { return }
+        lastSaveAt = Date()
+        let lo = max(0, index - 5), hi = min(queue.count, index + 40)
+        let saved = SavedPlayback(queue: Array(queue[lo..<hi]), index: index - lo, elapsed: elapsed)
+        if let d = try? JSONEncoder().encode(saved) { UserDefaults.standard.set(d, forKey: "lastPlayback") }
+    }
+
+    private func restore() {
+        guard let d = UserDefaults.standard.data(forKey: "lastPlayback"),
+              let s = try? JSONDecoder().decode(SavedPlayback.self, from: d), s.queue.indices.contains(s.index) else { return }
+        queue = s.queue
+        index = s.index
+        hasTrack = true
+        duration = Double(current.seconds)
+        elapsed = s.elapsed
+        resumeAt = s.elapsed
+        status = "Ready"
     }
 
     // MARK: speed, sleep timer, SponsorBlock
@@ -654,6 +703,7 @@ final class PlayerModel: ObservableObject {
     // MARK: lock screen and headphones
 
     private func updateNowPlaying(force: Bool) {
+        guard hasTrack else { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil; return }
         let now = Date().timeIntervalSince1970
         if !force && now - lastInfoUpdate < 1 { return }
         lastInfoUpdate = now

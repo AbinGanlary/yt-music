@@ -80,6 +80,7 @@ struct LibraryView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Theme.bg)
+            .miniPlayerClearance()
             .navigationTitle("Library")
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -173,6 +174,7 @@ struct TrackListScreen: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Theme.bg)
+        .miniPlayerClearance()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
