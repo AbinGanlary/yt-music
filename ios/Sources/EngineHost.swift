@@ -152,7 +152,7 @@ final class EngineHost: NSObject, WKNavigationDelegate {
     }
 
     /// The country that catalogue calls follow: none while "Global content" is on (the default).
-    static func loc() -> String {
+    nonisolated static func loc() -> String {
         let d = UserDefaults.standard
         if d.object(forKey: "global") == nil || d.bool(forKey: "global") { return "" }
         let c = d.string(forKey: "country") ?? "auto"
