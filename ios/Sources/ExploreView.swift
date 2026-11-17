@@ -56,6 +56,7 @@ struct ExploreView: View {
                 VStack(alignment: .leading, spacing: 26) {
                     if let e = error { Text(e).font(.caption).foregroundStyle(Color.red).padding(.horizontal, 20) }
                     if data == nil && error == nil { ProgressView().frame(maxWidth: .infinity).padding(.top, 60) }
+                    LastFMExploreSection()
                     Shelf(title: "New releases", items: data?.newReleases ?? [])
                     Shelf(title: "Charts", items: charts?.playlists ?? [])
                     Shelf(title: "Top artists", items: charts?.artists ?? [])
@@ -90,6 +91,7 @@ struct ExploreView: View {
             .toolbar { ToolbarItem(placement: .navigationBarTrailing) { SettingsButton() } }
             .navigationDestination(for: Coll.self) { CollectionScreen(coll: $0) }
             .navigationDestination(for: MoodItem.self) { MoodScreen(mood: $0) }
+            .navigationDestination(for: LFMSource.self) { LastFMListScreen(source: $0) }
             .task { await load() }
             .refreshable { await load() }
         }

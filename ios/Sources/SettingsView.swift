@@ -21,6 +21,8 @@ struct SettingsView: View {
     @AppStorage("global") private var global = true
     @AppStorage("country") private var country = "auto"
     @AppStorage("tasteLangs") private var tasteLangs = ""
+    @AppStorage("lastfmKey") private var lastfmKey = ""
+    @AppStorage("radioSource") private var radioSource = "youtube"
     @AppStorage("tasteArtists") private var tasteArtists = ""
     @AppStorage("homeHide") private var hidden = ""
     @AppStorage("ytSignedIn") private var signedIn = false
@@ -31,7 +33,7 @@ struct SettingsView: View {
     @State private var checking = false
 
     private let homeSections: [(id: String, label: String)] = [
-        ("moods", "Mood chips"), ("listen", "Listen again"), ("mix", "Picked for you"), ("because", "Because you played"), ("quick", "Quick picks"), ("trend", "Trending"),
+        ("moods", "Mood chips"), ("listen", "Listen again"), ("mix", "Picked for you"), ("because", "Because you played"), ("quick", "Quick picks"), ("lastfm", "Last.fm top tracks"), ("trend", "Trending"),
     ]
 
     private func homeBinding(_ id: String) -> Binding<Bool> {
@@ -110,6 +112,22 @@ struct SettingsView: View {
                     Text("For you")
                 } footer: {
                     Text("Home, Quick picks, New releases, Trending and Charts show music from around the world. Turn Global content off to follow your location instead. Location uses your phone's region, not GPS.")
+                }
+
+                Section {
+                    TextField("API key", text: $lastfmKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.system(.body, design: .monospaced))
+                    Link("Get a free API key", destination: URL(string: "https://www.last.fm/api/account/create")!)
+                    Picker("Radio uses", selection: $radioSource) {
+                        Text("YouTube Music").tag("youtube")
+                        Text("Last.fm similar songs").tag("lastfm")
+                    }
+                } header: {
+                    Text("Last.fm")
+                } footer: {
+                    Text("Add a free Last.fm API key to see Last.fm charts and tags in Explore and on Home, and to start a radio from Last.fm's similar songs. Last.fm only lists songs, so each one is matched on YouTube Music to play it. Your key stays on this phone.")
                 }
 
                 Section {

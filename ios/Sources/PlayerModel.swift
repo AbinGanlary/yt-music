@@ -139,7 +139,7 @@ final class PlayerModel {
     }
 
     /// A station: the song plays and similar songs keep coming. If it is already playing, it carries on and only what follows changes.
-    func startRadio(_ t: Track) {
+    func startRadio(_ t: Track, lastFM: Bool = false) {
         orderBackup = []
         if t.id == current.id, player.currentItem != nil {
             queue = [t]
@@ -150,8 +150,8 @@ final class PlayerModel {
             index = 0
             start()
         }
-        flash("Starting radio")
-        Task { await topUp(force: true, plain: true) }
+        flash(lastFM ? "Starting Last.fm radio" : "Starting radio")
+        Task { await topUp(force: true, plain: true, lastFM: lastFM ? true : nil) }
     }
 
     func toggleShuffle() {
@@ -645,9 +645,21 @@ final class PlayerModel {
     /// Near the end of the queue, ask the engine for songs like the current one and add them (once per song).
     private func extendQueueIfNeeded(_ t: Track) { Task { await topUp() } }
 
+    /// Songs like this one: from Last.fm's similar tracks (matched on YouTube Music), falling back to YouTube Music's own radio.
+    private static func songsLike(_ s: Track, lastFM: Bool, engine: EngineHost) async -> [Track] {
+        if lastFM {
+            let artist = s.artist.components(separatedBy: ", ").first ?? s.artist
+            if let similar = try? await LastFM.similar(artist: artist, track: s.title), !similar.isEmpty {
+                let matched = await SongMatcher.shared.resolveAll(similar, max: 16)
+                if !matched.isEmpty { return matched }
+            }
+        }
+        return (try? await engine.radio(s.id)) ?? []
+    }
+
     /// Keeps the queue going: when three or fewer songs are left (or `force`), adds songs like the last one. Unless `plain`, a couple of
     /// songs you like are used as extra seeds too, so the mix drifts toward your taste. Songs marked "not interested" are left out.
-    private func topUp(force: Bool = false, plain: Bool = false) async {
+    private func topUp(force: Bool = false, plain: Bool = false, lastFM: Bool? = nil) async {
         guard !extending, autoplay, let last = queue.last, last.id.count >= 11 else { return }
         if !force && queue.count - index > 3 { return }
         extending = true
@@ -658,8 +670,10 @@ final class PlayerModel {
             seeds += Array(pool.shuffled().prefix(2))
         }
         let eng = engine
+        // the radio source is YouTube Music, or Last.fm's similar songs (Settings → Last.fm), unless this call says which
+        let useLastFM = lastFM ?? (LastFM.isOn && UserDefaults.standard.string(forKey: "radioSource") == "lastfm")
         let lists = await withTaskGroup(of: (Int, [Track]).self) { group -> [[Track]] in
-            for (i, s) in seeds.enumerated() { group.addTask { (i, (try? await eng.radio(s.id)) ?? []) } }
+            for (i, s) in seeds.enumerated() { group.addTask { (i, await PlayerModel.songsLike(s, lastFM: useLastFM, engine: eng)) } }
             var out = [[Track]](repeating: [], count: seeds.count)
             for await (i, l) in group { out[i] = l }
             return out

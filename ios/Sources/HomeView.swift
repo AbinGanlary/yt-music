@@ -53,6 +53,9 @@ struct SongList: View {
                 }
                 .contextMenu {
                     Button { player.startRadio(t) } label: { Label("Start radio", systemImage: "dot.radiowaves.left.and.right") }
+                    if LastFM.isOn {
+                        Button { player.startRadio(t, lastFM: true) } label: { Label("Start Last.fm radio", systemImage: "antenna.radiowaves.left.and.right") }
+                    }
                     Button { player.playNext(t) } label: { Label("Play next", systemImage: "text.line.first.and.arrowtriangle.forward") }
                     Button { player.addToQueue(t) } label: { Label("Add to queue", systemImage: "text.append") }
                     Menu {
@@ -100,6 +103,9 @@ struct TrackShelf: View {
                             .onTapGesture { tap(); player.play(t, in: tracks) }
                             .contextMenu {
                                 Button { player.startRadio(t) } label: { Label("Start radio", systemImage: "dot.radiowaves.left.and.right") }
+                                if LastFM.isOn {
+                                    Button { player.startRadio(t, lastFM: true) } label: { Label("Start Last.fm radio", systemImage: "antenna.radiowaves.left.and.right") }
+                                }
                                 Button { player.playNext(t) } label: { Label("Play next", systemImage: "text.line.first.and.arrowtriangle.forward") }
                                 Button { player.toggleLike(t) } label: { Label("Like", systemImage: "heart") }
                             }
@@ -132,6 +138,7 @@ struct HomeView: View {
     @State private var quick: [Track] = []
     @State private var noResults = false
     @State private var trending: [Track] = []
+    @State private var lastfm: [Track] = []
     @State private var because: [Track] = []
     @State private var becauseTitle = ""
     @State private var results: [Track] = []
@@ -235,6 +242,7 @@ struct HomeView: View {
                     SongList(tracks: results.isEmpty ? quick : results)
                 }
 
+                if results.isEmpty && on("lastfm") { TrackShelf(title: "Last.fm top tracks", subtitle: "From Last.fm", tracks: lastfm) }
                 if results.isEmpty && on("trend") { TrackShelf(title: "Trending", tracks: trending) }
             }
             .listStyle(.plain)
@@ -302,6 +310,12 @@ struct HomeView: View {
         if signedIn, let shelves: [YTShelf] = try? await engine.get("/api/ythome") { ytShelves = shelves } else if !signedIn { ytShelves = [] }
         let loc = EngineHost.loc()
         if on("trend"), let raw: [RawTrack] = try? await engine.get("/api/trending?country=\(loc.isEmpty ? "ZZ" : loc)") { trending = raw.compactMap { Track($0) } }
+        if on("lastfm"), LastFM.isOn {
+            let loc = EngineHost.loc()
+            if let list = try? await (loc.isEmpty ? LastFM.chart(limit: 30) : LastFM.country(loc, limit: 30)) {
+                lastfm = await SongMatcher.shared.resolveAll(list, max: 14)
+            }
+        } else { lastfm = [] }
         let artists = Taste.artists(tasteArtists), langs = Taste.langs(tasteLangs)
         if on("mix"), !artists.isEmpty || !langs.isEmpty {
             let ids = artists.prefix(6).map { $0.id }.joined(separator: ",")
