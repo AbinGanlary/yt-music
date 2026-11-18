@@ -101,6 +101,8 @@ There is no Mac involved. A cloud Mac builds the app, and you sign it on your iP
 2. Open **Actions → Build iOS app → Run workflow**. In a few minutes it produces the artifact **`YTMusic-unsigned.ipa`**.
 3. Download it, move it to your iPhone, and either install it with the signing tool you use for your own apps, or import it into [LiveContainer](https://github.com/LiveContainer/LiveContainer) (no signing step, and the app doesn't count toward the 3-app limit). If you sign it yourself, trust the developer under *Settings → General → VPN & Device Management*.
 
+**AltStore / SideStore:** add this source, then install **YT Music** from it: `https://raw.githubusercontent.com/AbinGanlary/yt-music/main/altstore/source.json` (or [open it in AltStore](altstore://source?url=https://raw.githubusercontent.com/AbinGanlary/yt-music/main/altstore/source.json)). It is updated automatically with every release. A free Apple ID allows only 3 sideloaded apps, so import the IPA into LiveContainer if you are at the limit.
+
 No secrets are needed in GitHub. To update, install the new IPA over the old one: your data is kept.
 
 > Apps signed with third-party or enterprise certificates can be revoked by whoever issued the certificate. If the app stops opening, install it again with a fresh one. **Library → ··· → Back up to a file** keeps your data safe in the meantime.

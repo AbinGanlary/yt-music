@@ -1,0 +1,55 @@
+name: Update AltStore source
+
+# When a release is published, point altstore/source.json at its IPA (version, date, size, checksum).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update source.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          NOTES: ${{ github.event.release.name }}
+        run: |
+          set -euo pipefail
+          gh release download "$TAG" --pattern '*.ipa' --dir ipa
+          IPA=$(ls ipa/*.ipa | head -1)
+          python3 - "$IPA" "$TAG" <<'PY'
+          import hashlib, json, os, sys, datetime
+          ipa, tag = sys.argv[1], sys.argv[2]
+          data = open(ipa, 'rb').read()
+          src = json.load(open('altstore/source.json'))
+          v = {
+            "version": tag.lstrip('v'),
+            "buildVersion": "1",
+            "date": datetime.date.today().isoformat(),
+            "localizedDescription": os.environ.get('NOTES', ''),
+            "downloadURL": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{tag}/{os.path.basename(ipa)}",
+            "size": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "minOSVersion": "17.0",
+          }
+          app = src['apps'][0]
+          app['versions'] = [v] + [x for x in app['versions'] if x['version'] != v['version']][:9]
+          json.dump(src, open('altstore/source.json', 'w'), indent=2)
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add altstore/source.json
+          git diff --cached --quiet || (git commit -m "AltStore source: ${TAG}" && git push)
+        env:
+          TAG: ${{ github.event.release.tag_name }}

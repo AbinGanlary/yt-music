@@ -1,0 +1,40 @@
+{
+  "name": "YT Music",
+  "identifier": "com.ytmusic.swiftui.source",
+  "subtitle": "A fast, private, ad-free YouTube Music player",
+  "description": "Source for the YT Music iPhone app. Unsigned builds are re-signed on your phone by AltStore or SideStore.",
+  "iconURL": "https://raw.githubusercontent.com/AbinGanlary/yt-music/main/docs/icon.png",
+  "website": "https://github.com/AbinGanlary/yt-music",
+  "tintColor": "#ff6a3d",
+  "apps": [
+    {
+      "name": "YT Music",
+      "bundleIdentifier": "com.ytmusic.swiftui",
+      "developerName": "AbinGanlary",
+      "subtitle": "Ad-free YouTube Music, native SwiftUI",
+      "localizedDescription": "A native SwiftUI YouTube Music player: background playback, synced lyrics, offline songs, radio, a mix of your own genres, listening stats, and optional Last.fm charts and tags. No server, no subscription.",
+      "iconURL": "https://raw.githubusercontent.com/AbinGanlary/yt-music/main/docs/icon.png",
+      "tintColor": "#ff6a3d",
+      "screenshotURLs": [
+        "https://raw.githubusercontent.com/AbinGanlary/yt-music/main/docs/screenshots/app-home.png",
+        "https://raw.githubusercontent.com/AbinGanlary/yt-music/main/docs/screenshots/app-now.png",
+        "https://raw.githubusercontent.com/AbinGanlary/yt-music/main/docs/screenshots/app-explore.png",
+        "https://raw.githubusercontent.com/AbinGanlary/yt-music/main/docs/screenshots/app-library.png"
+      ],
+      "versions": [
+        {
+          "version": "2.3.0",
+          "buildVersion": "1",
+          "date": "2026-11-18",
+          "localizedDescription": "Last.fm as an optional music source (Settings → Music source).",
+          "downloadURL": "https://github.com/AbinGanlary/yt-music/releases/download/v2.3.0/YTMusic-unsigned.ipa",
+          "size": 1008913,
+          "sha256": "1e59405e1f6171b92f182ed2362a05b5d8d7a69b7f082146edd30638e6828b94",
+          "minOSVersion": "17.0"
+        }
+      ],
+      "appPermissions": { "entitlements": [], "privacy": {} }
+    }
+  ],
+  "news": []
+}
