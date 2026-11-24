@@ -425,15 +425,27 @@ final class PlayerModel {
 
     /// The whole song in a temporary file, fetched with ranged requests over IPv4.
     private func download(_ info: StreamInfo, _ t: Track, quiet: Bool = false) async throws -> URL {
-        guard let url = URL(string: info.url) else { throw URLError(.badURL) }
+        guard var url = URL(string: info.url) else { throw URLError(.badURL) }
         let chunk = 1_048_576
         var data = Data()
         var total = info.size ?? 0
         var start = 0
+        var renewals = 0
         while total == 0 || start < total {
             try Task.checkCancellation()
             let end = start + chunk - 1
             let r = try await v4Request(url: url, headers: ["Range": "bytes=\(start)-\(end)", "User-Agent": mobileUA], timeout: 40)
+            if (r.status == 403 || r.status == 410) && renewals < 2 {
+                // YouTube refused this address partway (or from the start): ask for a fresh one with a new session and
+                // carry on from the same byte when it is the same file, or start over when it is a different one.
+                renewals += 1
+                if !quiet { status = "YouTube refused the address. Getting a fresh one…" }
+                let again = try await engine.stream(t.id, fresh: 2, quality: quality)
+                guard let u = URL(string: again.url) else { throw URLError(.badURL) }
+                url = u
+                if again.itag != info.itag || (again.size ?? 0) != total { data = Data(); start = 0; total = again.size ?? 0 }
+                continue
+            }
             guard r.status == 206 || r.status == 200 else { throw NSError(domain: "dl", code: r.status, userInfo: [NSLocalizedDescriptionKey: "YouTube answered \(r.status) for the audio"]) }
             if let cr = r.headers.first(where: { $0.key.lowercased() == "content-range" })?.value, let slash = cr.firstIndex(of: "/"), let n = Int(cr[cr.index(after: slash)...]) { total = n }
             data.append(r.body)

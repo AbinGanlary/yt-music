@@ -515,7 +515,17 @@ export function createEngine({ Innertube, fetch: doFetch, probe = null, auth = n
   // fresh address (it is tied to the session and network it was issued to). When VISIONOS is refused, it is retried
   // once with a brand-new session before falling back to the degraded clients. fresh >= 2 also starts a new session.
   // (Signed-in tokens are not tried here: YouTube answers HTTP 400 when the TV sign-in tokens are used with these clients.)
-  const ATTEMPTS = [["VISIONOS", "anon"], ["VISIONOS", "renew"], ["IOS", "anon"], ["ANDROID_VR", "anon"]];
+  // The check reads the first bytes AND the last ones: the degraded clients serve the start and then refuse everything
+  // past ~1 MiB, so a start-only check handed out addresses that died a minute in (or when downloading). A refused
+  // VISIONOS address is retried with a brand-new session twice, a moment apart, before the degraded clients are tried.
+  const ATTEMPTS = [["VISIONOS", "anon"], ["VISIONOS", "renew"], ["VISIONOS", "renew"], ["IOS", "anon"], ["ANDROID_VR", "anon"]];
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function serves(url, size) {
+    const st = await probe(url, 0, 1);
+    if (st !== 200 && st !== 206) return st;
+    if (!(size > 1200000)) return st;
+    return probe(url, size - 2, size - 1);                    // the end of the song, well past the ~1 MiB a degraded address serves
+  }
   async function resolveStream(id, quality = "high", fresh = false) {
     const key = `${id}:${quality}`, hit = streams.get(key);
     if (!fresh && hit && hit.expires > now() + 60e3) return hit;
@@ -523,12 +533,13 @@ export function createEngine({ Innertube, fetch: doFetch, probe = null, auth = n
     if (fresh >= 2) sessions.delete("");
     let lastErr = null, refused = false;
     const errs = [];
+    let renewals = 0;
     for (const [client, mode] of ATTEMPTS) {
       if (mode === "renew" && !refused) continue;            // only retry with a new session when the first address was refused
       if (mode === "auth" && !authStore.get()) continue;
       const renew = mode === "renew";
       try {
-        if (renew) sessions.delete("");
+        if (renew) { sessions.delete(""); if (renewals++) await sleep(1500); }
         const yt = mode === "auth" ? await getSignedYT("") : await getYT("");
         const info = await yt.getBasicInfo(id, { client });
         const status = info.playability_status?.status;
@@ -541,9 +552,9 @@ export function createEngine({ Innertube, fetch: doFetch, probe = null, auth = n
         if (!url) { lastErr = new Error(`${tag}: no direct url`); errs.push(lastErr.message); continue; }
         const q = new URL(url).searchParams, exp = Number(q.get("expire"));
         if (probe) {
-          const st = await probe(url);
+          const st = await serves(url, Number(pick.content_length) || 0);
           if (st !== 200 && st !== 206) {
-            refused = true;
+            if (client === "VISIONOS") refused = true;
             const ip = String(q.get("ip") || "").slice(0, 24);
             lastErr = new Error(`${tag}${renew ? " (new session)" : ""}: audio ${st}${ip ? ", address for " + ip : ""}`);
             errs.push(lastErr.message); continue;
