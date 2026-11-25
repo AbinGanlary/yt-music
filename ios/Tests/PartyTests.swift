@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 @testable import YTMusic
 
 @Suite("Party mode")
@@ -21,7 +22,11 @@ struct PartyTests {
         var t = first
         while t < 39.5 {
             let i = Int(t * rate)
-            for j in 0..<400 { x[i + j] += (sin(Float(j) * 0.05) + 0.5 * sin(Float(j) * 0.4)) * exp(-Float(j) / 90) }
+            for j in 0..<400 {
+                let f = Float(j)
+                let tone: Float = sin(f * 0.05) + 0.5 * sin(f * 0.4)
+                x[i + j] += tone * exp(-f / 90)
+            }
             t += per
         }
         let r = try #require(BeatTracker.analyze(x, rate: rate))
