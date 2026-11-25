@@ -49,6 +49,7 @@ struct MixView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if genres.isEmpty { empty } else { hero }
+                    PartyBanner()
                     builderCard
                     if !genres.isEmpty { genreGrid; moreChips }
                 }

@@ -224,6 +224,7 @@ struct HomeView: View {
         if tasteLangs.isEmpty && tasteArtists.isEmpty && !hideTaste { tasteCard.homeRow() }
 
         if on("jump") { jumpGrid.homeRow(top: 4, bottom: 10) }
+        if on("party") { PartyBanner().homeRow(top: 2, bottom: 10) }
 
         if on("made") && !mixes.isEmpty {
             VStack(alignment: .leading, spacing: 10) {

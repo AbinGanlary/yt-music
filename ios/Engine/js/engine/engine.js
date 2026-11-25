@@ -423,6 +423,71 @@ export function createEngine({ Innertube, fetch: doFetch, probe = null, auth = n
     const e = new Error("no lyrics"); e.status = 404; throw e;
   };
 
+  /* ---------- Party mode: where a song's hook is ---------- */
+  // YouTube's "Most replayed" peak when the video has one (music videos do, album tracks don't), otherwise the first
+  // time the chorus is sung (the block of lyric lines that repeats most), otherwise about a third of the way in.
+  const hooks = new Map();
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").replace(/\s+/g, " ").trim();
+  function chorusStart(lines, dur) {
+    const count = new Map();
+    for (const l of lines) { const k = norm(l.text); if (k.length >= 4) count.set(k, (count.get(k) || 0) + 1); }
+    const rep = lines.map((l) => count.get(norm(l.text)) || 0);
+    const blocks = [];                                        // runs of repeated lines: the chorus blocks
+    for (let i = 0; i < lines.length; i++) {
+      if (rep[i] < 2 || (i > 0 && rep[i - 1] >= 2)) continue;   // only where a run begins
+      let j = i, score = 0;
+      while (j < lines.length && rep[j] >= 2) { score += rep[j]; j++; }
+      const start = lines[i].start;
+      if (j - i < 2 || start < Math.max(15, dur * 0.07) || (dur && start > dur * 0.75)) continue;
+      blocks.push({ score: score * Math.min(j - i, 4), start });   // longer blocks are choruses, a repeated two-line tag is not
+    }
+    if (blocks.length) {                                      // the first chorus that is nearly as strong as the strongest
+      const max = Math.max(...blocks.map((b) => b.score));
+      return blocks.find((b) => b.score >= max * 0.5).start;
+    }
+    // no block: the first time the most repeated single line is sung
+    let top = null;
+    lines.forEach((l, i) => { if (rep[i] >= 3 && l.start >= 10 && (!top || rep[i] > top.c)) top = { c: rep[i], start: l.start }; });
+    return top ? top.start : null;
+  }
+  /** The strongest rise in the "Most replayed" curve after the start: for album tracks the curve mostly falls as
+   *  listeners leave, so a plain maximum lands near the start; a rise means people went back to that part. */
+  function replayedStart(marks, dur) {
+    const pts = marks.map((m) => ({ t: Number(m.time_range_start_millis) / 1000, v: Number(m.heat_marker_intensity_score_normalized) || 0 }));
+    const from = Math.max(12, dur * 0.08), to = dur * 0.8;
+    let trough = null, best = null;
+    for (const p of pts) {
+      if (p.t < from) continue;
+      if (p.t > to) break;
+      if (!trough || p.v < trough.v) trough = p;
+      const rise = p.v - trough.v;
+      if (!best || rise > best.rise) best = { rise, start: trough.t };
+    }
+    return best && best.rise >= 0.08 ? best.start : null;
+  }
+  H.hook = async ({ id, loc, title = "", artist = "", dur = 0 }) => {
+    if (hooks.has(id)) return hooks.get(id);
+    let out = null, marks = [];
+    try {
+      const info = await (await getYT(loc)).getInfo(id);
+      dur = dur || Number(info.basic_info?.duration) || 0;
+      marks = info.heat_map?.heat_markers || [];
+    } catch { /* no curve */ }
+    try {
+      const l = await H.lyrics({ id, loc, title, artist, dur });
+      const s = l?.hasTimestamps && l.lines?.length ? chorusStart(l.lines, dur) : null;
+      if (s != null) out = { start: Math.max(0, s - 0.5), source: "chorus", line: l.lines.find((x) => x.start >= s - 0.01)?.text || "" };
+    } catch { /* no lyrics */ }
+    if (!out && marks.length && dur) {
+      const s = replayedStart(marks, dur);
+      if (s != null) out = { start: Math.max(0, s - 1), source: "replayed" };
+    }
+    if (!out) out = { start: dur ? Math.round(dur * 0.3) : 50, source: "guess" };
+    hooks.set(id, out);
+    if (hooks.size > 300) hooks.delete(hooks.keys().next().value);
+    return out;
+  };
+
   /* ---------- the signed-in account (all of these need Settings → Account → Sign in) ---------- */
   H.account = async () => {
     if (!authStore.get()) return { signedIn: false };
@@ -498,6 +563,7 @@ export function createEngine({ Innertube, fetch: doFetch, probe = null, auth = n
       case "account": return H.account();
       case "ythome": return H.ytHome();
       case "liked": return H.liked();
+      case "hook": return H.hook({ id: arg, loc, title: p.get("title") || "", artist: p.get("artist") || "", dur: Number(p.get("dur")) || 0 });
       case "lyrics": return H.lyrics({ id: arg, loc, title: p.get("title") || "", artist: p.get("artist") || "", dur: Number(p.get("dur")) || 0 });
     }
     throw Object.assign(new Error("unsupported endpoint " + u.pathname), { status: 404 });

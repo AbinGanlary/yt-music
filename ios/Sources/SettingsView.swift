@@ -33,7 +33,7 @@ struct SettingsView: View {
     @State private var checking = false
 
     private let homeSections: [(id: String, label: String)] = [
-        ("moods", "Mood chips"), ("jump", "Quick access"), ("made", "Made for you"), ("listen", "Listen again"), ("mix", "Picked for you"), ("because", "Because you played"), ("quick", "Quick picks"), ("trend", "Trending"),
+        ("moods", "Mood chips"), ("jump", "Quick access"), ("party", "Party mode"), ("made", "Made for you"), ("listen", "Listen again"), ("mix", "Picked for you"), ("because", "Because you played"), ("quick", "Quick picks"), ("trend", "Trending"),
     ]
 
     private func homeBinding(_ id: String) -> Binding<Bool> {
