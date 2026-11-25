@@ -29,21 +29,23 @@ struct RootView: View {
     @State private var showNow = false
     @State private var newName = ""
     @State private var renameText = ""
+    @State private var router = TabRouter()
 
     var body: some View {
         @Bindable var player = player
-        TabView {
+        TabView(selection: $router.tab) {
             HomeView()
-                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tabItem { Label("Home", systemImage: "house.fill") }.tag(0)
             MixView()
-                .tabItem { Label("Mix", systemImage: "dot.radiowaves.left.and.right") }
+                .tabItem { Label("Mix", systemImage: "dot.radiowaves.left.and.right") }.tag(1)
             ExploreView()
-                .tabItem { Label("Explore", systemImage: "safari") }
+                .tabItem { Label("Explore", systemImage: "safari") }.tag(2)
             LibraryView()
-                .tabItem { Label("Library", systemImage: "books.vertical.fill") }
+                .tabItem { Label("Library", systemImage: "books.vertical.fill") }.tag(3)
             AnalyticsView()
-                .tabItem { Label("Analytics", systemImage: "chart.bar.fill") }
+                .tabItem { Label("Analytics", systemImage: "chart.bar.fill") }.tag(4)
         }
+        .environment(router)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if player.hasTrack {                            // nothing has played yet: no mini player
                 MiniPlayer(open: { showNow = true })
