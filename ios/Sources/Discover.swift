@@ -254,6 +254,7 @@ struct QuickPicksGrid: View {
         .onTapGesture { tap(); player.play(t, in: tracks) }
         .contextMenu {
             Button { player.startRadio(t) } label: { Label("Start radio", systemImage: "dot.radiowaves.left.and.right") }
+            Button { player.startParty(from: t) } label: { Label("Start a party", systemImage: "party.popper") }
             Button { player.playNext(t) } label: { Label("Play next", systemImage: "text.line.first.and.arrowtriangle.forward") }
             Button { player.addToQueue(t) } label: { Label("Add to queue", systemImage: "text.append") }
             Button { player.toggleLike(t) } label: {

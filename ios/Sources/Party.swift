@@ -15,7 +15,10 @@ struct PartyState: Equatable {
     var startedFor: String?                // the song whose hook has been handled
     var hookStart: Double = 0
     var hookSource = ""
-    var hooks: [String: HookInfo] = [:]
+    var note: String?                      // what the decks are doing ("Mixing · filter", "Getting the song ready…")
+    var nextReady = false                  // the next song is downloaded and analysed
+    var bpm: Double?                       // the current song's tempo, when it could be measured
+    var sure = false                       // its beats were steady enough to mix on
 }
 
 /// A kind of party: what it is called and what is searched for it.
@@ -43,17 +46,15 @@ let partyVibes: [PartyVibe] = [
 
 /// The Party card on Home and Mix.
 struct PartyBanner: View {
-    @Environment(EngineHost.self) private var engine
     @Environment(PlayerModel.self) private var player
-    @State private var open = false
     var body: some View {
-        Button { tap(); open = true } label: {
+        Button { tap(); player.showParty = true } label: {
             HStack(spacing: 14) {
                 Image(systemName: "party.popper.fill").font(.system(size: 30)).foregroundStyle(.white)
                     .frame(width: 54, height: 54).background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Party mode").font(.headline.weight(.heavy))
-                    Text("Pick the vibe. Every song starts at the hook.").font(.footnote).opacity(0.9)
+                    Text(player.party != nil ? "Your party is on. Tap to open it." : "Your songs or a vibe, mixed like a DJ.").font(.footnote).opacity(0.9)
                 }
                 .foregroundStyle(.white)
                 Spacer(minLength: 0)
@@ -67,7 +68,6 @@ struct PartyBanner: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 20)
-        .fullScreenCover(isPresented: $open) { PartyView().environment(engine).environment(player).environment(player.time) }
     }
 }
 
@@ -81,12 +81,27 @@ struct PartyView: View {
     @AppStorage("partyMinutes") private var minutes = 60
     @State private var building = false
     @State private var progress = ""
+    @State private var seeds: [Track] = []
+    @State private var query = ""
+    @State private var results: [Track] = []
+    @State private var searchTask: Task<Void, Never>?
 
     private var chosen: [String] { storedVibes.split(separator: "|").map(String.init) }
 
     var body: some View {
         ZStack {
-            if player.party != nil { PartyLive(close: { dismiss() }) } else { setup }
+            if player.party != nil {
+                PartyLive(close: { dismiss() })
+            } else if player.partyStarting {
+                VStack(spacing: 14) {
+                    ProgressView().controlSize(.large)
+                    Text("Lining up the party…").font(.headline)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.bg)
+            } else {
+                setup
+            }
         }
         .animation(.easeOut(duration: 0.3), value: player.party != nil)
     }
@@ -97,8 +112,9 @@ struct PartyView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    seedSection
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("What's the vibe?").font(.title2.bold())
+                        Text(seeds.isEmpty ? "What's the vibe?" : "Add a vibe (optional)").font(.title2.bold())
                         Text("Pick up to three. Your liked songs that fit come first.").font(.footnote).foregroundStyle(Theme.muted)
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                             vibeTile(PartyVibe(name: "Your favourites", query: "", symbol: "heart.circle.fill"))
@@ -118,8 +134,8 @@ struct PartyView: View {
                             Text("Hooks (60 s)").tag(60.0); Text("Hooks (90 s)").tag(90.0); Text("Whole songs").tag(0.0)
                         }
                         .pickerStyle(.segmented)
-                        Text(clip > 0 ? "Each song starts at its chorus and fades into the next after \(Int(clip)) seconds. Tap Keep playing to hear a song to the end."
-                                      : "Each song starts at its chorus and plays to the end.")
+                        Text(clip > 0 ? "Each song comes in at its chorus and, about \(Int(clip)) seconds later (at the end of a phrase), is mixed into the next: same tempo, beats lined up, basses swapped on the drop. Tap Keep playing to hear a song to the end."
+                                      : "Each song comes in at its chorus, plays to near its end and is mixed into the next one, beat-matched.")
                             .font(.footnote).foregroundStyle(Theme.muted)
                     }
                 }
@@ -134,16 +150,98 @@ struct PartyView: View {
                         Text(building ? progress : "Start the party").font(.headline.weight(.heavy))
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 16)
-                    .background(chosen.isEmpty ? Color.gray : Theme.accent, in: Capsule())
+                    .background(canStart ? Theme.accent : Color.gray, in: Capsule())
                     .foregroundStyle(Color.black)
                 }
                 .buttonStyle(.plain)
-                .disabled(chosen.isEmpty || building)
+                .disabled(!canStart || building)
                 .padding(.horizontal, 20).padding(.bottom, 8)
             }
             .navigationTitle("Party mode")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+        }
+    }
+
+    private var canStart: Bool { !chosen.isEmpty || !seeds.isEmpty }
+
+    // MARK: - starting from your own songs
+
+    private var seedSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Start from your songs").font(.title2.bold())
+            Text("Pick up to three songs. The party starts with them and keeps going with songs like them.").font(.footnote).foregroundStyle(Theme.muted)
+            if !seeds.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(seeds) { t in
+                            HStack(spacing: 8) {
+                                Cover(track: t, radius: 6).frame(width: 30, height: 30)
+                                Text(t.title).font(.footnote.weight(.semibold)).lineLimit(1).frame(maxWidth: 140, alignment: .leading)
+                                Button { tap(); seeds.removeAll { $0.id == t.id } } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.muted) }
+                                    .accessibilityLabel("Remove \(t.title)")
+                            }
+                            .padding(.leading, 5).padding(.trailing, 10).padding(.vertical, 5)
+                            .background(Theme.surface, in: Capsule())
+                        }
+                    }
+                }
+            }
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(Theme.muted)
+                TextField("Search a song", text: $query)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.search)
+                if !query.isEmpty { Button { query = ""; results = [] } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.muted) } }
+            }
+            .padding(.horizontal, 12).frame(height: 44)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .onChange(of: query) { _, q in search(q) }
+            ForEach(Array(results.prefix(5))) { t in
+                let picked = seeds.contains { $0.id == t.id }
+                Button {
+                    tap()
+                    if picked { seeds.removeAll { $0.id == t.id } } else if seeds.count < 3 { seeds.append(t); query = ""; results = [] } else { player.notify("Up to three songs") }
+                } label: {
+                    HStack(spacing: 10) {
+                        Cover(track: t, radius: 6).frame(width: 40, height: 40)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(t.title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                            Text(t.artist).font(.caption).foregroundStyle(Theme.muted).lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: picked ? "checkmark.circle.fill" : "plus.circle").font(.title3).foregroundStyle(picked ? Theme.accent : Theme.muted)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            if query.isEmpty && seeds.isEmpty && !player.lib.likes.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(player.lib.likes.prefix(8))) { t in
+                            Button { tap(); if seeds.count < 3 { seeds.append(t) } } label: {
+                                Label(t.title, systemImage: "heart.fill").font(.caption.weight(.semibold)).lineLimit(1)
+                                    .padding(.horizontal, 10).padding(.vertical, 7).background(Theme.surface, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func search(_ q: String) {
+        searchTask?.cancel()
+        let text = q.trimmingCharacters(in: .whitespaces)
+        guard text.count >= 2 else { results = []; return }
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            if Task.isCancelled { return }
+            let found = (try? await engine.search(text)) ?? []
+            if !Task.isCancelled { results = found }
         }
     }
 
@@ -180,6 +278,11 @@ struct PartyView: View {
         let perSong = clip > 0 ? clip + 2 : 210
         let want = max(15, Int(Double(minutes * 60) / perSong))
         var lists: [[Track]] = []
+        for t in seeds {
+            progress = "Finding songs like \(t.title)…"
+            let like = ((try? await engine.radio(t.id)) ?? []).filter { $0.id != t.id }
+            lists.append(like.filter { !disliked.contains($0.id) && $0.seconds <= 420 })
+        }
         for name in chosen {
             progress = "Finding \(name)…"
             var list: [Track] = []
@@ -197,8 +300,8 @@ struct PartyView: View {
             }
             lists.append(list.filter { !disliked.contains($0.id) && $0.seconds <= 420 })
         }
-        var seenID = Set<String>(), seenTitle = Set<String>()
-        var set: [Track] = []
+        var seenID = Set(seeds.map { $0.id }), seenTitle = Set(seeds.map { Self.titleKey($0.title) })
+        var set: [Track] = seeds
         for i in 0..<(lists.map { $0.count }.max() ?? 0) {
             for l in lists where i < l.count {
                 let t = l[i], key = Self.titleKey(t.title)
@@ -207,7 +310,8 @@ struct PartyView: View {
             if set.count >= want { break }
         }
         guard !set.isEmpty else { player.notify("Couldn't find songs for this party"); return }
-        player.startParty(Array(set.prefix(want)), title: chosen.joined(separator: " + "), clip: clip)
+        let title = (seeds.map { $0.title } + chosen).prefix(3).joined(separator: " + ")
+        player.startParty(Array(set.prefix(want)), title: title, clip: clip)
     }
 
     /// "Kala Chashma (From “Baar Baar Dekho”)" and "Kala Chashma" are the same song.
@@ -255,8 +359,12 @@ struct PartyLive: View {
                 VStack(spacing: 4) {
                     Text(t.title).font(.title2.weight(.heavy)).lineLimit(1)
                     Text(t.artist).font(.body).opacity(0.8).lineLimit(1)
-                    Text(hookLabel(p)).font(.caption.weight(.semibold)).padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(.white.opacity(0.15), in: Capsule()).padding(.top, 4)
+                    HStack(spacing: 6) {
+                        chip(hookLabel(p))
+                        if let bpm = p?.bpm, p?.startedFor == t.id { chip("\(Int(bpm)) BPM", icon: p?.sure == true ? "metronome.fill" : "metronome") }
+                    }
+                    .padding(.top, 4)
+                    if let note = p?.note { Text(note).font(.caption.weight(.semibold)).opacity(0.85).padding(.top, 2) }
                 }
                 .padding(.horizontal, 24)
 
@@ -286,6 +394,15 @@ struct PartyLive: View {
         }
         .buttonStyle(.plain)
         .onAppear { pulse = true }
+    }
+
+    private func chip(_ text: String, icon: String? = nil) -> some View {
+        HStack(spacing: 4) {
+            if let icon { Image(systemName: icon) }
+            Text(text)
+        }
+        .font(.caption.weight(.semibold)).padding(.horizontal, 10).padding(.vertical, 4)
+        .background(.white.opacity(0.15), in: Capsule())
     }
 
     private func hookLabel(_ p: PartyState?) -> String {
@@ -324,7 +441,13 @@ struct PartyLive: View {
         let next = Array(player.queue.dropFirst(player.index + 1).prefix(3))
         if !next.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("UP NEXT").font(.caption2.weight(.heavy)).tracking(1.4).opacity(0.7)
+                HStack {
+                    Text("UP NEXT").font(.caption2.weight(.heavy)).tracking(1.4).opacity(0.7)
+                    Spacer()
+                    Label(player.party?.nextReady == true ? "Next ready" : "Getting the next song…",
+                          systemImage: player.party?.nextReady == true ? "checkmark.circle.fill" : "arrow.down.circle")
+                        .font(.caption2.weight(.semibold)).opacity(0.8)
+                }
                 ForEach(next) { n in
                     HStack(spacing: 10) {
                         Cover(track: n, radius: 6).frame(width: 36, height: 36)
@@ -335,7 +458,7 @@ struct PartyLive: View {
                         Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture { tap(); player.play(n) }
+                    .onTapGesture { tap(); if player.queue.indices.contains(player.index + 1), player.queue[player.index + 1].id == n.id { player.next() } else { player.play(n) } }
                 }
             }
             .padding(14)

@@ -54,7 +54,18 @@ final class PlayerModel {
     var artAccent: Color?                    // the accent when Settings → Appearance is set to "Artwork"
     var sleepLabel: String?                  // "15 min", "End of song", or nil when off
     var shareItem: ShareItem?                // a tagged .m4a ready for the share sheet
-    var party: PartyState?                   // Party mode: songs start at their hook, optionally only a clip of each
+    var party: PartyState?                   // Party mode: songs start at their hook and are mixed into each other by PartyDJ
+    var showParty = false                    // the Party screen is open
+    var partyStarting = false                // a party from one song is being put together
+    @ObservationIgnored private lazy var dj: PartyDJ = {
+        let d = PartyDJ()
+        d.host = self
+        d.fetch = { [weak self] t in
+            guard let self else { throw CancellationError() }
+            return try await self.partyFile(t)
+        }
+        return d
+    }()
 
     private let engine = EngineHost.shared
     private let player = AVPlayer()
@@ -109,6 +120,7 @@ final class PlayerModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] s in
                 guard let self = self else { return }
+                if self.party != nil { return }               // Party mode plays through its own decks
                 self.isPlaying = (s != .paused)
                 self.updateNowPlaying(force: true)
                 if s == .paused { self.saveState(force: true) }
@@ -127,7 +139,7 @@ final class PlayerModel {
     /// A list of songs (search results): the tapped one plays and the rest follow.
     func play(_ t: Track, in list: [Track]) {
         flushListen()                                   // count the old song before the queue changes
-        if party != nil && !startingParty { stopParty() }       // playing something else ends Party mode
+        if party != nil && !startingParty { stopParty(carryOn: false) }       // playing something else ends Party mode
         if shuffle && list.count > 1 {                  // the chosen song first, the rest shuffled
             orderBackup = list
             queue = [t] + list.filter { $0.id != t.id }.shuffled()
@@ -195,6 +207,7 @@ final class PlayerModel {
     }
     func next() {
         if queue.isEmpty { return }
+        if party != nil { dj.skip(); return }
         if index + 1 < queue.count { index += 1; start(); return }
         if repeatMode == 1 { index = 0; start(); return }                      // repeat all: back to the first song
         guard autoplay else { player.pause(); flash("End of the queue"); return }
@@ -209,12 +222,14 @@ final class PlayerModel {
     }
     func toggle() {
         guard hasTrack else { return }
+        if party != nil { dj.toggle(); return }
         if player.currentItem == nil { start(resume: true); return }
         if player.timeControlStatus == .paused { player.play() } else { player.pause() }
     }
     func seek(_ fraction: Double) {
         let d = duration > 0 ? duration : Double(current.seconds)
         let target = max(0, min(1, fraction)) * d
+        if party != nil { dj.seek(target); elapsed = target; return }
         player.seek(to: CMTime(seconds: target, preferredTimescale: 600))
         elapsed = target
     }
@@ -326,12 +341,16 @@ final class PlayerModel {
         if sponsorBlockOn { Task { await loadSegments(t) } }
         elapsed = 0
         duration = Double(t.seconds)
-        if party != nil { party?.keep = false; party?.startedFor = nil; player.volume = 0 }
         status = "Finding the song…"
         player.pause()
         player.replaceCurrentItem(with: nil)
         updateNowPlaying(force: true)
         saveState(force: true)
+        if party != nil {
+            party?.keep = false; party?.startedFor = nil
+            dj.play(t)
+            return
+        }
         loadTask = Task { await load(t) }
     }
 
@@ -475,7 +494,6 @@ final class PlayerModel {
                 seekTo(seconds: r)
             }
             if !segments.isEmpty, let hit = segments.first(where: { seconds >= $0[0] && seconds < $0[1] - 0.6 }) { seekTo(seconds: hit[1]) }
-            if party != nil { partyTick(seconds) }
         }
         // iOS sometimes reads these audio files as twice as long (and plays silence after the real end), so when the
         // player's length is far above what YouTube says, trust YouTube, and end the song at the real end.
@@ -554,7 +572,7 @@ final class PlayerModel {
         sleepTask = Task {
             try? await Task.sleep(nanoseconds: UInt64(m) * 60_000_000_000)
             if Task.isCancelled { return }
-            player.pause()
+            if party != nil { if isPlaying { dj.toggle() } } else { player.pause() }
             sleepLabel = nil
             flash("Sleep timer: paused")
         }
@@ -722,74 +740,121 @@ final class PlayerModel {
     // MARK: Party mode
 
     private var startingParty = false
-    private var hookRequested = Set<String>()
 
-    /// Starts a party set: every song starts at its hook; with a clip length, only that many seconds of each play.
+    /// Starts a party set: every song starts at its hook and is mixed into the next one; with a clip length, about
+    /// that many seconds of each play (rounded to a whole musical phrase).
     func startParty(_ tracks: [Track], title: String, clip: Double) {
         guard let first = tracks.first else { return }
         startingParty = true
         shuffle = false
+        player.pause()
         party = PartyState(title: title, clip: clip)
         play(first, in: tracks)
         startingParty = false
     }
-    func stopParty() {
+    /// A party from one song: it plays first (from its hook), then songs like it.
+    func startParty(from t: Track) {
+        let clip = UserDefaults.standard.object(forKey: "partyClip") as? Double ?? 60
+        showParty = true
+        partyStarting = true
+        Task {
+            defer { partyStarting = false }
+            let more = ((try? await engine.radio(t.id)) ?? []).filter { $0.id != t.id && !lib.isDisliked($0) && $0.seconds <= 420 }
+            var seen = Set([PartyView.titleKey(t.title)])
+            let list = [t] + more.filter { seen.insert(PartyView.titleKey($0.title)).inserted }
+            startParty(list, title: t.title, clip: clip)
+        }
+    }
+    /// Ends Party mode; the song carries on in the normal player from the same place.
+    func stopParty(carryOn: Bool = true) {
+        guard party != nil else { return }
+        let pos = dj.currentPosition
+        dj.stop()
         party = nil
         player.volume = 1
+        if carryOn { resumeAt = pos; start(resume: true) }
     }
-    /// Lets the current song play to its end (and at full volume) instead of moving on after the clip.
+    /// Lets the current song play to its end instead of moving on after the clip.
     func keepPlaying() {
         party?.keep = true
-        player.volume = 1
+        dj.replan()
     }
     /// Starts the current song from its beginning.
     func fromTheStart() {
         party?.keep = true
-        player.volume = 1
-        seekTo(seconds: 0)
+        dj.seek(0)
     }
-    private func requestHook(_ t: Track) {
-        guard t.id.count >= 11, party?.hooks[t.id] == nil, !hookRequested.contains(t.id) else { return }
-        hookRequested.insert(t.id)
-        let eng = engine
-        Task { [weak self] in
-            let path = "/api/hook/\(t.id)?title=\(EngineHost.enc(t.title))&artist=\(EngineHost.enc(t.artist))&dur=\(t.seconds)"
-            let h = try? await eng.get(path, as: HookInfo.self)
-            guard let self, self.party != nil else { return }
-            self.party?.hooks[t.id] = h ?? HookInfo(start: 0, source: "none")
-        }
+
+    /// A song file for the party decks: the saved copy, or a fresh download.
+    fileprivate func partyFile(_ t: Track) async throws -> (url: URL, temporary: Bool) {
+        if let local = downloads.url(for: t.id) { return (local, false) }
+        guard t.id.count >= 11 else { throw URLError(.fileDoesNotExist) }
+        let info = try await engine.stream(t.id, quality: quality)
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("party-\(t.id).m4a")
+        let got = try await download(info, t, quiet: true)
+        try? FileManager.default.removeItem(at: file)
+        try FileManager.default.moveItem(at: got, to: file)
+        return (file, true)
     }
-    private func partyTick(_ seconds: Double) {
-        guard var p = party, let t = playingTrack, let item = player.currentItem, item.status == .readyToPlay else { return }
-        requestHook(t)
-        if queue.indices.contains(index + 1) { requestHook(queue[index + 1]) }
-        if p.startedFor != t.id {
-            // wait (silent) for the hook for up to 4 seconds, then jump to it and fade in
-            if let h = p.hooks[t.id] {
-                let d = duration > 0 ? duration : Double(t.seconds)
-                if h.start > 3 && h.start < d - 20 { seekTo(seconds: h.start) }
-                p.startedFor = t.id
-                p.hookStart = h.start > 3 && h.start < d - 20 ? h.start : 0
-                p.hookSource = h.source
-                party = p
-            } else if seconds > 4 {
-                p.startedFor = t.id
-                p.hookStart = 0
-                p.hookSource = "none"
-                party = p
-            }
-            return
-        }
-        let end = p.hookStart + p.clip
-        if p.clip > 0 && !p.keep && seconds >= end - 2.5 {
-            player.volume = max(0, player.volume - 0.1)               // fade out over the last seconds of the clip
-            if seconds >= end { next() }
-        } else if player.volume < 1 {
-            player.volume = min(1, player.volume + 0.15)              // fade in
-        }
+
+    // what the decks tell the player
+    func djStatus(_ text: String) { status = text; party?.note = text }
+    func djTime(_ pos: Double, _ dur: Double) {
+        if pos > lastSec, pos - lastSec < 2 { listened += pos - lastSec }
+        lastSec = pos
+        elapsed = pos
+        duration = dur
+        let ready = dj.nextReady, bpm = dj.currentBPM.map { $0.rounded() }
+        if party?.nextReady != ready { party?.nextReady = ready }
+        if party?.bpm != bpm { party?.bpm = bpm }
+        updateNowPlaying(force: false)
+        saveState()
+    }
+    func djPlaying(_ on: Bool) {
+        isPlaying = on
+        updateNowPlaying(force: true)
+    }
+    /// The decks moved on to another song (after a mix, a skip, or the end of a song).
+    func djAdvance(to i: Int, mixed: Bool) {
+        guard queue.indices.contains(i) else { return }
+        flushListen()
+        index = i
+        let t = current
+        playingTrack = t
+        listened = 0
+        lastSec = 0
+        party?.keep = false
+        party?.startedFor = nil
+        Task { await updateArtAccent(t) }
+        Task { await loadNowArtwork(t) }
+        lib.addHistory(t)
+        extendQueueIfNeeded(t)
+        duration = Double(t.seconds)
+        updateNowPlaying(force: true)
+        saveState(force: true)
+    }
+    func djStarted(_ p: PartyDJ.Prepared, mixed: Bool) {
+        isPlaying = dj.playing
+        status = mixed ? "Mixed in at the hook" : "Playing"
+        party?.startedFor = p.track.id
+        party?.hookStart = p.hook
+        party?.hookSource = p.hookSource
+        party?.note = nil
+        party?.sure = p.grid?.sure ?? false
+        updateNowPlaying(force: true)
+    }
+    func djEnded() {
+        isPlaying = false
+        flash("That's the end of the party")
+    }
+    func djMoveUp(_ from: Int, to: Int) {
+        guard queue.indices.contains(from), queue.indices.contains(to), from != to else { return }
+        let t = queue.remove(at: from)
+        queue.insert(t, at: to)
     }
 
     func seekTo(seconds: Double) {
+        if party != nil { dj.seek(seconds); elapsed = seconds; return }
         player.seek(to: CMTime(seconds: max(0, seconds), preferredTimescale: 600))
         elapsed = seconds
     }
@@ -847,6 +912,7 @@ final class PlayerModel {
         }
     }
     private func toggleIfPaused(_ wantPlaying: Bool) {
+        if party != nil { if wantPlaying != isPlaying { toggle() }; return }
         if wantPlaying && player.timeControlStatus == .paused { toggle() }
         if !wantPlaying && player.timeControlStatus != .paused { toggle() }
     }

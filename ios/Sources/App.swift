@@ -26,6 +26,7 @@ struct YTMusicApp: App {
 
 struct RootView: View {
     @Environment(PlayerModel.self) private var player
+    @Environment(EngineHost.self) private var engine
     @State private var showNow = false
     @State private var newName = ""
     @State private var renameText = ""
@@ -48,7 +49,7 @@ struct RootView: View {
         .environment(router)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if player.hasTrack {                            // nothing has played yet: no mini player
-                MiniPlayer(open: { showNow = true })
+                MiniPlayer(open: { if player.party != nil { player.showParty = true } else { showNow = true } })
                     .padding(.horizontal, 10)
                     .padding(.bottom, 52)                   // sits just above the tab bar
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -71,6 +72,9 @@ struct RootView: View {
         }
         .animation(.easeOut(duration: 0.25), value: player.message)
         .sheet(item: $player.shareItem) { item in ShareSheet(url: item.url).ignoresSafeArea() }
+        .fullScreenCover(isPresented: $player.showParty) {
+            PartyView().environment(engine).environment(player).environment(player.time)
+        }
         .sheet(isPresented: $showNow) {
             NowPlayingView()
                 .environment(player)

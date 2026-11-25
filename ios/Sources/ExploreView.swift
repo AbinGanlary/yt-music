@@ -253,6 +253,7 @@ struct ExploreView: View {
                 .onTapGesture { tap(); player.play(t, in: top) }
                 .contextMenu {
                     Button { player.startRadio(t) } label: { Label("Start radio", systemImage: "dot.radiowaves.left.and.right") }
+                    Button { player.startParty(from: t) } label: { Label("Start a party", systemImage: "party.popper") }
                     Button { player.playNext(t) } label: { Label("Play next", systemImage: "text.line.first.and.arrowtriangle.forward") }
                     Button { player.toggleLike(t) } label: { Label("Like", systemImage: "heart") }
                 }
