@@ -23,17 +23,30 @@
       ],
       "versions": [
         {
+          "version": "2.4.0",
+          "buildVersion": "1",
+          "date": "2026-11-25",
+          "localizedDescription": "YT Music 2.4.0",
+          "downloadURL": "https://github.com/AbinGanlary/yt-music/releases/download/v2.4.0/YTMusic-unsigned.ipa",
+          "size": 1158595,
+          "sha256": "595803c63c14f9920d728fca87cd71b2bc6249b5c28a6a5da094fae40d17971d",
+          "minOSVersion": "17.0"
+        },
+        {
           "version": "2.3.0",
           "buildVersion": "1",
           "date": "2026-11-18",
-          "localizedDescription": "Last.fm as an optional music source (Settings → Music source).",
+          "localizedDescription": "Last.fm as an optional music source (Settings \u2192 Music source).",
           "downloadURL": "https://github.com/AbinGanlary/yt-music/releases/download/v2.3.0/YTMusic-unsigned.ipa",
           "size": 1008913,
           "sha256": "1e59405e1f6171b92f182ed2362a05b5d8d7a69b7f082146edd30638e6828b94",
           "minOSVersion": "17.0"
         }
       ],
-      "appPermissions": { "entitlements": [], "privacy": {} }
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
     }
   ],
   "news": []
