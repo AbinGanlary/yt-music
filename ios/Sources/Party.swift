@@ -359,17 +359,14 @@ struct PartyLive: View {
     var body: some View {
         let t = player.current
         let p = player.party
-        ZStack {
-            LinearGradient(colors: t.colors + [Color.black], startPoint: pulse ? .topLeading : .top, endPoint: pulse ? .bottomTrailing : .bottom)
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: pulse)
-            Color.black.opacity(0.35).ignoresSafeArea()
-            VStack(spacing: 18) {
+        // the background fills the screen; the controls stay inside the safe area (clear of the notch / Dynamic Island)
+        VStack(spacing: 18) {
                 HStack {
                     Button { close() } label: { Image(systemName: "chevron.down").font(.title3.weight(.bold)) }
                     Spacer()
                     ViewSwitch(djView: $djView)
                     Spacer()
+                    AirPlayButton().frame(width: 30, height: 30).accessibilityLabel("Speakers and AirPlay")
                     Button { tap(); player.stopParty(); close() } label: { Text("End").font(.subheadline.weight(.bold)) }
                 }
                 .padding(.horizontal, 22)
@@ -413,9 +410,17 @@ struct PartyLive: View {
                 }
                 upNext
                 Spacer(minLength: 0)
+        }
+        .foregroundStyle(.white)
+        .padding(.top, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background {
+            ZStack {
+                LinearGradient(colors: t.colors + [Color.black], startPoint: pulse ? .topLeading : .top, endPoint: pulse ? .bottomTrailing : .bottom)
+                    .animation(.easeInOut(duration: 6).repeatForever(autoreverses: true), value: pulse)
+                Color.black.opacity(0.35)
             }
-            .foregroundStyle(.white)
-            .padding(.top, 10)
+            .ignoresSafeArea()
         }
         .buttonStyle(.plain)
         .onAppear { pulse = true }

@@ -36,8 +36,7 @@ struct DJView: View {
         let live = player.dj.live
         GeometryReader { g in
             let wide = g.size.width > g.size.height
-            ZStack {
-                Color(red: 0.05, green: 0.05, blue: 0.07).ignoresSafeArea()
+            Group {
                 if wide {
                     VStack(spacing: 6) {
                         topBar
@@ -52,6 +51,7 @@ struct DJView: View {
                         PadRow(live: live)
                     }
                     .padding(.horizontal, 8).padding(.vertical, 4)
+                    .padding(.top, 6)
                 } else {
                     ScrollView {
                         VStack(spacing: 10) {
@@ -69,7 +69,9 @@ struct DJView: View {
                     }
                 }
             }
+            .frame(width: g.size.width, height: g.size.height)
         }
+        .background(Color(red: 0.05, green: 0.05, blue: 0.07).ignoresSafeArea())
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
     }
@@ -89,6 +91,7 @@ struct DJView: View {
                     .padding(.horizontal, 10).padding(.vertical, 6).background(.white.opacity(0.12), in: Capsule())
             }
             .onChange(of: mixStyle) { _, _ in player.dj.replan() }
+            AirPlayButton().frame(width: 30, height: 30).accessibilityLabel("Speakers and AirPlay")
             Button { tap(); player.toggle() } label: {
                 Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.headline)
                     .frame(width: 36, height: 30).background(.white.opacity(0.12), in: Capsule())
