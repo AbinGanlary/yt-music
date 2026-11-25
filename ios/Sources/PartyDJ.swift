@@ -79,7 +79,10 @@ final class DJLive {
     var locked: Bool?                   // during a blend: are the beats together?
     var beat = 0
     var loopBeats: Int?
-    var echo = false, filter = false, reverb = false, rolling = false
+    var echo = false
+    var filter = false
+    var reverb = false
+    var rolling = false
     var mixing = false
     var canMix = false
 }
