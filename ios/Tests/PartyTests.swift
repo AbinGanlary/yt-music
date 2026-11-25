@@ -43,4 +43,15 @@ struct PartyTests {
         #expect(abs(g.snap(10.1) - 10.25) < 1e-9)
         #expect(abs(g.phase(10.5) - 0.5) < 1e-9)
     }
+
+    @Test func everyChangeHasANameAndOnlyBlendsNeedMatchingTempos() {
+        #expect(Set(DJChange.allCases.map { $0.name }).count == DJChange.allCases.count)
+        #expect(DJChange.allCases.filter { $0.blends }.count == 4)
+        #expect(DJChange.allCases.allSatisfy { !$0.blends || $0.fxBeats == 0 })
+    }
+
+    @Test func mostVibesAreEnglish() {
+        let indian: Set = ["Bollywood dance", "Punjabi", "Desi hip-hop", "Wedding"]
+        #expect(partyVibes.filter { !indian.contains($0.name) }.count > partyVibes.count / 2)
+    }
 }

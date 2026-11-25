@@ -22,6 +22,14 @@ struct SongAnalysis: Sendable {
     var grid: BeatGrid?
     var gainDB: Float           // brings every song to about the same loudness
     var duration: Double
+    var wave: Wave? = nil
+}
+
+/// A song's shape for the DJ view: loudness every `step` seconds (0...1) and how much of it is bass (0...1).
+struct Wave: Sendable {
+    let step: Double
+    let amp: [Float]
+    let bass: [Float]
 }
 
 enum BeatTracker {
@@ -108,14 +116,15 @@ enum BeatTracker {
     /// Runs off the main thread; opens its own copy of the file.
     static func analyzeFile(_ url: URL, hook: Double) -> SongAnalysis? {
         guard let file = try? AVAudioFile(forReading: url) else { return nil }
+        let wave = waveform(file)
         let sr = file.processingFormat.sampleRate
         let duration = Double(file.length) / sr
         let from = max(0, min(hook - 14, duration - 75))
         let frames = AVAudioFrameCount(min(Double(file.length) - from * sr, 75 * sr))
         guard frames > AVAudioFrameCount(sr * 20),
-              let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frames) else { return SongAnalysis(grid: nil, gainDB: 0, duration: duration) }
+              let buf = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frames) else { return SongAnalysis(grid: nil, gainDB: 0, duration: duration, wave: wave) }
         file.framePosition = AVAudioFramePosition(from * sr)
-        do { try file.read(into: buf, frameCount: frames) } catch { return SongAnalysis(grid: nil, gainDB: 0, duration: duration) }
+        do { try file.read(into: buf, frameCount: frames) } catch { return SongAnalysis(grid: nil, gainDB: 0, duration: duration, wave: wave) }
         guard let ch = buf.floatChannelData else { return nil }
         let chans = Int(buf.format.channelCount), len = Int(buf.frameLength)
         // mono, a quarter of the sample rate (an average of each four samples)
@@ -132,8 +141,43 @@ enum BeatTracker {
         let rms = sqrt(sq / Double(max(1, mono.count)))
         // about -14 dB RMS, never more than 4 dB louder or 8 dB quieter
         let gain = Float(max(-8, min(4, -14 - 20 * log10(max(1e-5, rms)))))
-        guard let r = analyze(mono, rate: sr / Double(dec)) else { return SongAnalysis(grid: nil, gainDB: gain, duration: duration) }
+        guard let r = analyze(mono, rate: sr / Double(dec)) else { return SongAnalysis(grid: nil, gainDB: gain, duration: duration, wave: wave) }
         let grid = BeatGrid(bpm: r.bpm, anchor: from + r.phase, sure: abs(r.drift) < 0.045)
-        return SongAnalysis(grid: grid, gainDB: gain, duration: duration)
+        return SongAnalysis(grid: grid, gainDB: gain, duration: duration, wave: wave)
+    }
+
+    /// The whole song's loudness every 50 ms, read a second at a time.
+    static func waveform(_ file: AVAudioFile) -> Wave? {
+        let fmt = file.processingFormat
+        let sr = fmt.sampleRate
+        let block = AVAudioFrameCount(sr * 0.05)
+        let chunk = block * 20
+        guard block > 0, let buf = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: chunk) else { return nil }
+        var amp: [Float] = [], bass: [Float] = []
+        var lp: Float = 0
+        let k = Float(2 * Double.pi * 150 / sr)
+        file.framePosition = 0
+        while file.framePosition < file.length {
+            buf.frameLength = 0
+            guard (try? file.read(into: buf, frameCount: chunk)) != nil, buf.frameLength > 0, let ch = buf.floatChannelData else { break }
+            let n = Int(buf.frameLength), b = Int(block)
+            var i = 0
+            while i < n {
+                let e = min(n, i + b)
+                var all: Float = 0, lo: Float = 0
+                for j in i..<e {
+                    let s = ch[0][j]
+                    lp += k * (s - lp)
+                    all += s * s
+                    lo += lp * lp
+                }
+                let rms = sqrt(all / Float(e - i))
+                amp.append(max(0, min(1, (20 * log10(max(1e-5, rms)) + 42) / 40)))
+                bass.append(all > 0 ? min(1, lo / all * 1.6) : 0)
+                i = e
+            }
+        }
+        file.framePosition = 0
+        return amp.isEmpty ? nil : Wave(step: 0.05, amp: amp, bass: bass)
     }
 }

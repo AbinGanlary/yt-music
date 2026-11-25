@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct YTMusicApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var player = PlayerModel()
 
     init() {
@@ -20,6 +21,27 @@ struct YTMusicApp: App {
                 .background(EngineView().frame(width: 1, height: 1).opacity(0.01).allowsHitTesting(false))
                 .preferredColorScheme(theme == 0 ? .dark : theme == 1 ? .light : nil)
                 .tint(accentHex == "art" ? (player.artAccent ?? Color(hex: "#ff6a3d")) : Color(hex: accentHex))
+        }
+    }
+}
+
+/// The app is portrait, except the DJ view, which turns the screen to landscape.
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    nonisolated(unsafe) static var mask: UIInterfaceOrientationMask = .portrait
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask { Self.mask }
+}
+
+enum ScreenOrientation {
+    @MainActor static func set(landscape: Bool) {
+        let mask: UIInterfaceOrientationMask = landscape ? .landscape : .portrait
+        guard AppDelegate.mask != mask else { return }
+        AppDelegate.mask = mask
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for w in scene.windows {
+                var vc = w.rootViewController
+                while let c = vc { c.setNeedsUpdateOfSupportedInterfaceOrientations(); vc = c.presentedViewController }
+            }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: landscape ? .landscapeRight : .portrait)) { _ in }
         }
     }
 }

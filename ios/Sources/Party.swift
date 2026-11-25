@@ -29,19 +29,23 @@ struct PartyVibe: Identifiable, Hashable {
     var id: String { name }
 }
 
+/// Mostly English, with the Indian party favourites after them.
 let partyVibes: [PartyVibe] = [
-    PartyVibe(name: "Bollywood dance", query: "Bollywood dance party songs", symbol: "sparkles"),
-    PartyVibe(name: "Punjabi party", query: "Punjabi party songs", symbol: "flame.fill"),
-    PartyVibe(name: "Hindi hits", query: "Hindi party hits", symbol: "star.fill"),
-    PartyVibe(name: "Wedding", query: "Wedding sangeet dance songs", symbol: "heart.fill"),
-    PartyVibe(name: "Tamil kuthu", query: "Tamil kuthu songs", symbol: "music.quarternote.3"),
-    PartyVibe(name: "Telugu mass", query: "Telugu mass dance songs", symbol: "bolt.fill"),
-    PartyVibe(name: "Garba", query: "Garba dandiya songs", symbol: "circle.hexagongrid.fill"),
-    PartyVibe(name: "Desi hip-hop", query: "Desi hip hop", symbol: "mic.fill"),
-    PartyVibe(name: "Retro", query: "90s Bollywood party songs", symbol: "opticaldisc.fill"),
+    PartyVibe(name: "Pop hits", query: "Pop party hits", symbol: "star.fill"),
+    PartyVibe(name: "Dance & EDM", query: "EDM dance party anthems", symbol: "waveform"),
+    PartyVibe(name: "House", query: "House music party", symbol: "house.fill"),
+    PartyVibe(name: "Hip-hop", query: "Hip hop party songs", symbol: "mic.fill"),
+    PartyVibe(name: "R&B", query: "R&B party hits", symbol: "heart.fill"),
+    PartyVibe(name: "2000s throwback", query: "2000s party hits", symbol: "opticaldisc.fill"),
+    PartyVibe(name: "80s & 90s", query: "80s 90s party hits", symbol: "radio.fill"),
+    PartyVibe(name: "Latin", query: "Latin reggaeton party hits", symbol: "sun.max.fill"),
+    PartyVibe(name: "Afrobeats", query: "Afrobeats party hits", symbol: "globe.europe.africa.fill"),
+    PartyVibe(name: "K-pop", query: "K-pop dance hits", symbol: "sparkles"),
     PartyVibe(name: "Workout", query: "Gym workout songs", symbol: "figure.run"),
-    PartyVibe(name: "English pop", query: "English party pop hits", symbol: "globe"),
-    PartyVibe(name: "EDM", query: "EDM party anthems", symbol: "waveform"),
+    PartyVibe(name: "Bollywood dance", query: "Bollywood dance party songs", symbol: "music.mic"),
+    PartyVibe(name: "Punjabi", query: "Punjabi party songs", symbol: "flame.fill"),
+    PartyVibe(name: "Desi hip-hop", query: "Desi hip hop", symbol: "music.quarternote.3"),
+    PartyVibe(name: "Wedding", query: "Wedding sangeet dance songs", symbol: "party.popper.fill"),
 ]
 
 /// The Party card on Home and Mix.
@@ -76,9 +80,11 @@ struct PartyView: View {
     @Environment(EngineHost.self) private var engine
     @Environment(PlayerModel.self) private var player
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("partyVibes") private var storedVibes = "Bollywood dance|Punjabi party"
+    @AppStorage("partyVibes") private var storedVibes = "Pop hits|Dance & EDM"
     @AppStorage("partyClip") private var clip = 75.0
     @AppStorage("partyMinutes") private var minutes = 60
+    @AppStorage("mixStyle") private var mixStyle = "auto"
+    @AppStorage("partyDJView") private var djView = false
     @State private var building = false
     @State private var progress = ""
     @State private var seeds: [Track] = []
@@ -91,7 +97,7 @@ struct PartyView: View {
     var body: some View {
         ZStack {
             if player.party != nil {
-                PartyLive(close: { dismiss() })
+                if djView { DJView(djView: $djView, close: { dismiss() }) } else { PartyLive(djView: $djView, close: { dismiss() }) }
             } else if player.partyStarting {
                 VStack(spacing: 14) {
                     ProgressView().controlSize(.large)
@@ -104,6 +110,10 @@ struct PartyView: View {
             }
         }
         .animation(.easeOut(duration: 0.3), value: player.party != nil)
+        .onAppear { ScreenOrientation.set(landscape: djView && player.party != nil) }
+        .onChange(of: djView) { _, on in ScreenOrientation.set(landscape: on && player.party != nil) }
+        .onChange(of: player.party != nil) { _, on in ScreenOrientation.set(landscape: on && djView) }
+        .onDisappear { ScreenOrientation.set(landscape: false) }
     }
 
     // MARK: - setup
@@ -127,6 +137,14 @@ struct PartyView: View {
                             Text("30 min").tag(30); Text("1 hour").tag(60); Text("2 hours").tag(120); Text("All night").tag(240)
                         }
                         .pickerStyle(.segmented)
+                    }
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("How should songs change?").font(.title2.bold())
+                        Picker("Mix style", selection: $mixStyle) {
+                            Text("Auto").tag("auto"); Text("Smooth").tag("smooth"); Text("Club").tag("club"); Text("Hype").tag("hype")
+                        }
+                        .pickerStyle(.segmented)
+                        Text(mixStyleNote).font(.footnote).foregroundStyle(Theme.muted)
                     }
                     VStack(alignment: .leading, spacing: 10) {
                         Text("How much of each song?").font(.title2.bold())
@@ -164,6 +182,15 @@ struct PartyView: View {
     }
 
     private var canStart: Bool { !chosen.isEmpty || !seeds.isEmpty }
+
+    private var mixStyleNote: String {
+        switch mixStyle {
+        case "smooth": "Long blends, bass swaps and filters; reverb and echo when tempos are far apart."
+        case "club": "Bass swaps and filters most of the time, with echoes, loop rolls and clean cuts."
+        case "hype": "Loop rolls, brakes, backspins and drop cuts, for big moments."
+        default: "A mix of everything, picked to suit each pair of songs."
+        }
+    }
 
     // MARK: - starting from your own songs
 
@@ -325,6 +352,7 @@ struct PartyView: View {
 struct PartyLive: View {
     @Environment(PlayerModel.self) private var player
     @Environment(PlaybackClock.self) private var clock
+    @Binding var djView: Bool
     let close: () -> Void
     @State private var pulse = false
 
@@ -340,10 +368,7 @@ struct PartyLive: View {
                 HStack {
                     Button { close() } label: { Image(systemName: "chevron.down").font(.title3.weight(.bold)) }
                     Spacer()
-                    VStack(spacing: 1) {
-                        Text("PARTY MODE").font(.caption2.weight(.heavy)).tracking(1.5).opacity(0.8)
-                        Text(p?.title ?? "").font(.footnote.weight(.semibold)).lineLimit(1)
-                    }
+                    ViewSwitch(djView: $djView)
                     Spacer()
                     Button { tap(); player.stopParty(); close() } label: { Text("End").font(.subheadline.weight(.bold)) }
                 }

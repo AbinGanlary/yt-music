@@ -57,7 +57,7 @@ final class PlayerModel {
     var party: PartyState?                   // Party mode: songs start at their hook and are mixed into each other by PartyDJ
     var showParty = false                    // the Party screen is open
     var partyStarting = false                // a party from one song is being put together
-    @ObservationIgnored private lazy var dj: PartyDJ = {
+    @ObservationIgnored lazy var dj: PartyDJ = {
         let d = PartyDJ()
         d.host = self
         d.fetch = { [weak self] t in
